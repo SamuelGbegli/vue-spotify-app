@@ -1,0 +1,10 @@
+Some tracks may return multiple IDs (e.g., Watchin')
+Refresking url resets pagination values to 0
+Going to same URL does not reload page
+Grouped recored view table does not have links to Spotify pages
+When logging in, redirect URL is malformed
+Date range in playback records page:
+    Most recent date may appear first
+    If same day is picked for before and after, text may be formatted as "from 31st Dec 2024 to 31st Dec 2024"
+    No "No records found" if no records are returned
+    Date picker is not a QForm

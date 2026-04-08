@@ -1,0 +1,6 @@
+@vue_spotify_app.Server_HostAddress = http://localhost:5136
+
+GET {{vue_spotify_app.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
