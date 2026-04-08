@@ -363,5 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 TODO.txt
+Glitches.txt
 Get pending playback records.sql
-Recerate records (24-01-2026).sql
+Recreate records (24-01-2026).sql"
