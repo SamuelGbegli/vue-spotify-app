@@ -7,7 +7,7 @@ namespace vue_spotify_app.Classes
     public class SpotifyOptions
     {
         public string ClientID { get; set; }
-        public string RedirectURI { get; set; }
+        public string RedirectURL { get; set; }
         public string[] Scopes { get; set; }
     }
 }
