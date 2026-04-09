@@ -47,5 +47,7 @@ namespace vue_spotify_app.Classes
         /// Filter for one of two album values, "new" or "hipster".
         /// </summary>
         public string Tag { get; set; } = string.Empty;
+
+        public int Offset { get; set; }
     }
 }

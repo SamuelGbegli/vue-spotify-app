@@ -185,5 +185,23 @@ namespace vue_spotify_app.Server.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-    }
+
+        [HttpPost]
+        [Route("searchtracks")]
+        [Authorize]
+        public async Task<IActionResult> SearchTracks([FromBody] SearchDTO searchDTO)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var tracks = await _trackService.SearchForTracks(user.ID, searchDTO);
+                return Ok(tracks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+        }
 }

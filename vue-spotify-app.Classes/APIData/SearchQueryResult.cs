@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace vue_spotify_app.Classes.APIData
 {
-    public class ListOfTracks
+    public class SearchQueryResult
     {
-        public int total { get; set; }
-        public List<Track> tracks { get; set; }
+        public ListOfTracks Tracks { get; set; }
     }
 }
