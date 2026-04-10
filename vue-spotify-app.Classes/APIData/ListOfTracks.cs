@@ -8,7 +8,6 @@ namespace vue_spotify_app.Classes.APIData
 {
     public class ListOfTracks
     {
-        public int total { get; set; }
         public List<Track> tracks { get; set; }
     }
 }

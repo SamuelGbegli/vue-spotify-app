@@ -613,9 +613,9 @@ namespace vue_spotify_app.Server
             if(!string.IsNullOrWhiteSpace(searchDTO.Genre)) query.Append($"genre:{searchDTO.Genre} ");
             query.Remove(query.Length - 1, 1);
 
-            var response = await _spotifyAPIWrapper.GetAsync<ListOfTracks>(userID, $"search?q={query}&type=track&limit=10&offset={searchDTO.Offset}");
+            var response = await _spotifyAPIWrapper.GetAsync<SearchQueryResult>(userID, $"search?q={query}&type=track&limit=10&offset={searchDTO.Offset}");
 
-            foreach (var item in response.tracks)
+            foreach (var item in response.Tracks.items)
             {
                 var trackViewModel = new TrackViewModel
                 {
@@ -637,7 +637,7 @@ namespace vue_spotify_app.Server
                 }
                 tracks.Add(trackViewModel);
             }
-            return (response.total, tracks);
+            return (response.Tracks.total, tracks);
         }
 
         public async Task<Classes.Track> AddOrUpdateTrack(Classes.APIData.Track track)

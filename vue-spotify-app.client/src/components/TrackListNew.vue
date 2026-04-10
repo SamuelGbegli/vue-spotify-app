@@ -29,7 +29,7 @@
     </template>
     <template v-slot:body-cell-name="props">
       <QTd :props="props">
-        <div class="text-left wrap-text">
+        <div>
           <a :href="props.row.externalUrl">{{ props.row.name }}</a>
         </div>
       </QTd>
@@ -211,7 +211,6 @@
     {
       name: "actions",
       label: "Actions",
-      field: "",
       align: "left",
       style: "width: 5%",
       sortable: false

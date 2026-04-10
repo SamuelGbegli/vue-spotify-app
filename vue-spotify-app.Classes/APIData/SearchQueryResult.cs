@@ -8,6 +8,6 @@ namespace vue_spotify_app.Classes.APIData
 {
     public class SearchQueryResult
     {
-        public ListOfTracks Tracks { get; set; }
+        public TrackQueryResult Tracks { get; set; }
     }
 }

@@ -88,6 +88,11 @@
                 Review pending track records
               </QItemSection>
             </QItem>
+            <QItem clickable to="/search">
+              <QItemSection>
+                Search
+              </QItemSection>
+            </QItem>
             <QItem clickable to="/searchfortrackinplaylist">
               <QItemSection>
                 Search for tracks in playlist
