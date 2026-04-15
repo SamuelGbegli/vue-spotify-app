@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using vue_spotify_app.Classes;
 using vue_spotify_app.Server.Data;
 
 namespace vue_spotify_app.Server.Controllers
@@ -21,14 +22,14 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("getplaylists")]
-        public async Task<IActionResult> GetPlaylists([FromHeader] string authToken, int offset = 0, int numberOfPlaylists = 0)
+        public async Task<IActionResult> GetPlaylists(int offset = 0, int numberOfPlaylists = 50, bool getUserPlaylistsOnly = false)
         {
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _playlistService.GetPlaylists(user.ID, offset, numberOfPlaylists);
+                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists, getUserPlaylistsOnly);
 
                 return Ok(new
                 {
@@ -114,5 +115,27 @@ namespace vue_spotify_app.Server.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-    }
+
+        [HttpPost]
+        [Route("addtoplaylist")]
+        public async Task<IActionResult> AddToPlaylist([FromBody] AddToPlaylistDTO addToPlaylistDTO)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+
+                for (int i = 0; i < addToPlaylistDTO.TrackIDs.Count; i += 100)
+                {
+                    var batch = addToPlaylistDTO.TrackIDs.Skip(i).Take(100).ToList();
+                    await _playlistService.AddItemsToPlaylist(user.ID, addToPlaylistDTO.PlaylistID, batch);
+                }
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+        }
 }

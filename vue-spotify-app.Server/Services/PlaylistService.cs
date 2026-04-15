@@ -78,33 +78,32 @@ namespace vue_spotify_app.Server
         }
 
         // TODO: refactor to cache playlists in database and only call API to update playlists that have been modified since last fetch
-        public async Task<(int, List<PlaylistViewModel>)> GetPlaylists(Guid userID, int offset, int numberOfPlaylists)
+        public async Task<(int, List<PlaylistViewModel>)> GetPlaylists(User user, int offset, int numberOfPlaylists, bool getUserEditablePlaylists = false)
         {
             var viewModels = new List<PlaylistViewModel>();
 
             // Makes call to API
 
-                // Deserialize JSON response to object
-                var playlists = await _spotifyAPIWrapper.GetAsync<PlaylistResponse>(userID, $"me/playlists?offset={offset}&limit={numberOfPlaylists}");
+            // Deserialize JSON response to object
+            var playlists = getUserEditablePlaylists ?  _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID).Skip(offset).Take(numberOfPlaylists).AsQueryable() :  _dataContext.Playlists.Skip(offset).Take(numberOfPlaylists).AsQueryable();
+            var totalPlaylists = getUserEditablePlaylists ? await _dataContext.Playlists.CountAsync(p => p.OwnerID == user.SpotifyUserID) : await _dataContext.Playlists.CountAsync();
 
-                foreach (var playlist in playlists.items)
-                {
+            foreach (var playlist in playlists)
+            {
                     var viewModel = new PlaylistViewModel
                     {
-                        ID = playlist.id,
-                        Name = playlist.name,
-                        Description = playlist.description,
-                        NumberOfTracks = playlist.items.total,
-                        OwnerName = playlist.owner.display_name,
-                        OwnerLink = playlist.owner.external_urls.spotify,
-                        ExternalURL = playlist.external_urls.spotify
+                        ID = playlist.ID,
+                        Name = playlist.Name,
+                        NumberOfTracks = playlist.NumberOfTracks,
+                        OwnerName = playlist.OwnerName,
+//                        OwnerLink = playlist.,
+                        ExternalURL = $"https://open.spotify.com/playlist/{playlist.ID}",
+                        ImageLink = playlist.ImageURL
                     };
-
-                    if (playlist.images?.Any() == true && !playlist.images.IsNullOrEmpty())
-                        viewModel.ImageLink = playlist.images.First(x => x.width == playlist.images.Max(y => y.width)).url;
-                    viewModels.Add(viewModel);
-                }            
-            return (playlists.total, viewModels);
+                viewModels.Add(viewModel);
+            
+        }
+            return (totalPlaylists, viewModels);
         }
 
         // TODO: remove
@@ -158,6 +157,7 @@ namespace vue_spotify_app.Server
              return viewModel;
         }
 
+        //TODO: Remove
         public async Task<List<TrackViewModel>> GetPlaylistTracks(
             string playlistId,
             string trackQuery = "",
@@ -417,7 +417,6 @@ namespace vue_spotify_app.Server
             }
         }
    
-
         public async Task<int> GetNumberOfTrackPlaylists(string trackId)
         {
             return await _dataContext.TrackRecords.CountAsync(r => r.SpotifyID == trackId && r.PlaylistID != null);
@@ -538,6 +537,11 @@ namespace vue_spotify_app.Server
                 playlistsToAdd.Clear();
             }
             await _dataContext.SaveChangesAsync();
+        }
+
+        public async Task AddItemsToPlaylist(Guid UserID, string playlistID, List<string> trackIDs)
+        {
+            await _spotifyAPIWrapper.PostAsync(UserID, $"playlists/{playlistID}/tracks", new { uris = trackIDs.Select(id => $"spotify:track:{id}").ToList() });
         }
     }
 }
