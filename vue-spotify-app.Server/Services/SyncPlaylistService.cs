@@ -17,6 +17,7 @@ namespace vue_spotify_app.Server.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            int deferredWaitTime = 5;
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -34,16 +35,24 @@ namespace vue_spotify_app.Server.Services
                             {
                                 var playlistService = scope.ServiceProvider.GetRequiredService<PlaylistService>();
                                 await playlistService.InitialisePlaylists(id);
+                                await Task.Delay(TimeSpan.FromMinutes(3), stoppingToken);
                                 await playlistService.InitialisePlaylistTracks(id);
+                                await Task.Delay(TimeSpan.FromMinutes(10));
                             }
                         }
                     }
+                    deferredWaitTime = 5;
                     await Task.Delay(TimeSpan.FromHours(2));
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"ERROR: {ex.Message}");
-                    await Task.Delay(TimeSpan.FromMinutes(5));
+                    if(deferredWaitTime < 480)
+                    {
+                        if (deferredWaitTime < 15) deferredWaitTime += 5;
+                        else deferredWaitTime += 30;
+                    }
+                    await Task.Delay(TimeSpan.FromMinutes(deferredWaitTime), stoppingToken);
                 }
             }
         }

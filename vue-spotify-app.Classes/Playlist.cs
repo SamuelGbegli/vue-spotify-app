@@ -17,5 +17,7 @@ namespace vue_spotify_app.Classes
          public int NumberOfTracks { get; set; }
         public string OwnerName { get; set; }
         public string OwnerID { get; set; }
+
+        public string SnapshotID { get; set; } = string.Empty;
     }
 }

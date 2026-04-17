@@ -10,32 +10,11 @@
   const authStore = useAuthStore()
   const route = useRoute()
 
-
-  onMounted(async () => {
-    const code = route.query.code?.toString()
-    if (code) {
-      const token = await getToken(code)
-
-      const url = new URL(window.location.href)
-      url.searchParams.delete('code')
-      const updadedUrl = url.search ? url.href : url.href.replace('?', '')
-      window.history.replaceState({}, document.title, updadedUrl)
-    }
-
-    if (authStore.accessToken) {
-    }
-
-    if (!authStore.accessToken) {
-    }
-  })
-
   function toggleRightDrawer() {
     rightDrawerOpen.value = !rightDrawerOpen.value;
   }
 
   async function redirectToSpotifyAuthorise() {
-
-
     const response = await axios.get("auth/redirect", {
       headers: {
         "Content-Type": "application/json", "Accept": "application/json"
@@ -44,11 +23,6 @@
 
     window.location.href = response.data;
     console.log(response)
-  }
-
-  async function getToken(code: string) {
-    const response = await axios.get("/auth/callback")
-    return response.data
   }
 
 
@@ -67,11 +41,6 @@
     }
   }
 
-    const token = await refreshToken()
-    authStore.setAccessToken(token.access_token)
-    authStore.setRefreshToken(token.refresh_token)
-    authStore.setExpiresIn(token.expires_in)
-    alert("Refreshed token.");
 
 </script>
 

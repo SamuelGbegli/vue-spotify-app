@@ -95,7 +95,7 @@ namespace vue_spotify_app.Server
             {
                 { "client_id", _spotifyOptions.ClientID },
                 { "response_type", "code" },
-                { "redirect_uri", _spotifyOptions.RedirectURI },
+                { "redirect_uri", _spotifyOptions.RedirectURL },
                 { "scope", scopes },
                 {"state", state},
                 {"code_challenge_method", "S256"},
@@ -122,7 +122,7 @@ namespace vue_spotify_app.Server
                 { "client_id", _spotifyOptions.ClientID },
                 { "grant_type", "authorization_code" },
                 { "code", code },
-                { "redirect_uri", _spotifyOptions.RedirectURI },
+                { "redirect_uri", _spotifyOptions.RedirectURL },
                 { "code_verifier", codeVerifier }
             };
 

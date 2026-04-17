@@ -93,68 +93,6 @@
       </QTabPanel>
 
       <QTabPanel name="grouped">
-        <div class="row">
-          <QSpace />
-          <QPagination v-model="currentGroupPage"
-                       :max="totalGroupPages"
-                       @update:model-value="getGroupedRecords()"
-                       input />
-        </div>
-        <div>
-          <QMarkupTable v-if="groupedPlaybackRecords.length > 0">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Name</th>
-                <th>Artist(s)</th>
-                <th>Album</th>
-                <th>Total records</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="x in groupedPlaybackRecords" :key="groupedPlaybackRecords.indexOf(x)">
-                <td>
-                  <QImg :src="x.albumCover" width="48px" />
-                </td>
-                <td>
-                  <a :href="x.externalUrl">{{ x.name }}</a>
-                </td>
-                <td>
-                  <span v-for="y in x.artists" :key="y.id" :href="y.externalUrl"><a :href="y.externalUrl">{{ y.name }}</a><span v-if="x.artists.indexOf(y) < x.artists.length - 1">, </span></span>
-                </td>
-                <td>
-                  <a :href="x.albumExternalUrl">{{ x.albumName }}</a>
-                </td>
-                <td>{{ x.numberOfFoundRecords }}</td>
-                <td>
-                  <QBtnDropdown size="sm" color="primary" label="actions">
-                    <QList>
-                      <QItem clickable v-close-popup :to="`viewtrack/${x.id}`">
-                        <QItemSection>View track</QItemSection>
-                      </QItem>
-                      <QItem clickable v-close-popup @click="openQueueDialog(x.id, x.name)">
-                        <QItemSection>Add track to queue</QItemSection>
-                      </QItem>
-                    </QList>
-                  </QBtnDropdown>
-                </td>
-              </tr>
-            </tbody>
-          </QMarkupTable>
-          <div class="row">
-          <QSpace />
-          <QPagination v-model="currentGroupPage"
-                       :max="totalGroupPages"
-                       @update:model-value="getGroupedRecords()"
-                       input />
-        </div>
-          <QInnerLoading :showing="groupStatusCode === null">
-            <div class="row items-center justify-center" style="height: 200px;">
-              <q-spinner-dots size="50px" color="green" />
-            </div>
-          </QInnerLoading>
-        </div>
         <QTable
           style="height: 72vh"
           :rows="groupedPlaybackRecords"
