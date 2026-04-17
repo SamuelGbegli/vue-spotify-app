@@ -32,7 +32,7 @@ namespace vue_spotify_app.Server.Services
                             using (var userScope = _scopeFactory.CreateScope())
                             {
 
-                                var playbackRecordService = scope.ServiceProvider.GetRequiredService<PlaybackRecordService>();
+                                var playbackRecordService = userScope.ServiceProvider.GetRequiredService<PlaybackRecordService>();
                                 await playbackRecordService.UpdatePlaybackHistory(id, stoppingToken);
                             }
                         }
@@ -45,6 +45,7 @@ namespace vue_spotify_app.Server.Services
                     Console.WriteLine($"An error occurred while syncing playback records: {ex.Message}");
                 }
                 // Wait for 5 minutes before checking again
+                
                 await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
         }
