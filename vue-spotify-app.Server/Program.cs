@@ -41,6 +41,7 @@ builder.Services.AddHostedService<SyncLikedSongsLibraryService>();
 builder.Services.AddHostedService<SyncTracksWithPlaybackHistoryService>();
 builder.Services.AddHostedService<SyncPlaylistService>();
 builder.Services.AddHostedService<SyncTrackAliasService>();
+builder.Services.AddHostedService<SyncTracksService>();
 
 builder.Services.Configure<SpotifyOptions>(builder.Configuration.GetSection("Spotify"));
 builder.Services.AddHttpContextAccessor();
