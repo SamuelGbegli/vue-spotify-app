@@ -177,8 +177,7 @@ namespace vue_spotify_app.Server.Controllers
             // TODO: rewrite function to create and return CSV file
             try
             {
-                var tracks = await _trackService.GetTracks();
-                return Ok(tracks);
+                return Ok();
             }
             catch (Exception ex)
             {

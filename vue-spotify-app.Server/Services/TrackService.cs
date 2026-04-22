@@ -17,138 +17,6 @@ namespace vue_spotify_app.Server
             _spotifyAPIWrapper = spotifyAPIWrapper;
         }
 
-        /// <summary>
-        /// Gets the user's saved tracks in their Liked Songs library.
-        /// </summary>
-        /// <param name="trackQuery">A string a track must have to be returned.</param>
-        /// <param name="sortType">Determines the means tracks are sorted by.</param>
-        /// <param name="sortOrder">Determines whether tracks are sorted in ascending or descending order.</param>
-        /// <param name="offset">The number of tracks that will be skipped.</param>
-        /// <param name="numberOfTracks">The number of tracks that will be returned.</param>
-        /// <returns>A list of track objects.</returns>
-        public async Task<List<TrackViewModel>> GetTracks(
-            string trackQuery = "",
-            TrackSortType sortType = TrackSortType.Name,
-            SortOrder sortOrder = SortOrder.Ascending,
-            int offset = 0,
-            int numberOfTracks = 10)
-        {
-            var tracks = new List<Classes.Track>();
-            switch (sortType)
-            {
-                case TrackSortType.Name:
-                    tracks = sortOrder == SortOrder.Ascending ?
-                        await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderBy(t => t.Name).Skip(offset).Take(numberOfTracks).ToListAsync() :
-                         await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderByDescending(t => t.Name).Skip(offset).Take(numberOfTracks).ToListAsync();
-                    break;
-                case TrackSortType.Artist:
-                    tracks = sortOrder == SortOrder.Ascending ?
-                        await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderBy(t => t.Artists.FirstOrDefault().Name).Skip(offset).Take(numberOfTracks).ToListAsync() :
-                         await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderByDescending(t => t.Artists.FirstOrDefault().Name).Skip(offset).Take(numberOfTracks).ToListAsync();
-                    break;
-                case TrackSortType.Album:
-                    tracks = sortOrder == SortOrder.Ascending ?
-                        await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderBy(t => t.Album.Name).Skip(offset).Take(numberOfTracks).ToListAsync() :
-                         await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderByDescending(t => t.Album.Name).Skip(offset).Take(numberOfTracks).ToListAsync(); ;
-                    break;
-                case TrackSortType.Duration:
-                    tracks = sortOrder == SortOrder.Ascending ?
-                        await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderBy(t => t.Length).Skip(offset).Take(numberOfTracks).ToListAsync() :
-                         await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null) && t.Name.Contains(trackQuery))
-                        .OrderByDescending(t => t.Length).Skip(offset).Take(numberOfTracks).ToListAsync();
-                    break;
-                case TrackSortType.DateAdded:
-
-                    var trackIds = sortOrder == SortOrder.Ascending ?
-                        await _dataContext.TrackRecords.Where(r => r.PlaylistID == null).OrderBy(r => r.DateAdded).Select(r => r.SpotifyID).ToListAsync() :
-                        await _dataContext.TrackRecords.Where(r => r.PlaylistID == null).OrderByDescending(r => r.DateAdded).Select(r => r.SpotifyID).ToListAsync();
-                    tracks = await _dataContext.Tracks
-                        .Include(tracks => tracks.Artists)
-                        .Include(tracks => tracks.Album)
-                        .ThenInclude(Album => Album.AlbumCover)
-                        .Where(t => trackIds.Contains(t.ID) && t.Name.Contains(trackQuery)).Skip(offset).Take(numberOfTracks)
-                        .ToListAsync();
-                    break;
-                default:
-                    break;
-            }
-
-            var trackViewModels = new List<TrackViewModel>();
-            foreach (var track in tracks)
-            {
-                var trackViewModel = new TrackViewModel
-                {
-                    ID = track.ID,
-                    Name = track.Name,
-                    URI = track.SpotifyURI,
-                    ExternalURL = track.ExternalURL,
-                    AlbumName = track.Album.Name,
-                    AlbumCover = track.Album.AlbumCover.Link,
-                    AlbumURI = track.Album.SpotifyURI,
-                    AlbumExternalURL = track.Album.ExternalURL,
-                    Length = track.Length,
-                    DateSaved = _dataContext.TrackRecords
-                        .FirstOrDefault(r => r.SpotifyID == track.ID && r.PlaylistID == null)?.DateAdded,
-
-                };
-                foreach (var artist in track.Artists)
-                {
-                    trackViewModel.Artists.Add(new Classes.Artist
-                    {
-                        Name = artist.Name,
-                        ExternalURL = artist.ExternalURL
-                    });
-                }
-
-                // Looks for the last recorded time the track was played
-                if (await _dataContext.PlaybackRecords.CountAsync(r => r.SpotifyID == track.ID) > 0)
-                    trackViewModel.DateLastPlayed = _dataContext.PlaybackRecords.Where(r => r.SpotifyID == track.ID)
-                            .OrderByDescending(r => r.DatePlayed).First().DatePlayed;
-
-                trackViewModels.Add(trackViewModel);
-            }
-            return trackViewModels;
-        }
-
         public async Task<(int, List<TrackViewModel>)> GetTracksNew(string spotifyUserID, TrackFilter filter, string? playlistId = null, int offset = 0, int numberOfTracks = 50)
         {
 
@@ -193,7 +61,7 @@ namespace vue_spotify_app.Server
                         from lp in g.DefaultIfEmpty()
                         join liked in likedAliasSet
                             on (t.AliasID) equals liked into likedGroup
-                         from liked in likedGroup.DefaultIfEmpty()
+                        from liked in likedGroup.DefaultIfEmpty()
                         select new
                         {
                             Track = t,
@@ -329,8 +197,6 @@ namespace vue_spotify_app.Server
             if (user == null || user.SpotifyToken == null) return;
             foreach (var track in await _dataContext.TrackRecords.Where(t => t.PlaylistID == null).ToListAsync())
             {
-
-
                 var isInLikedSongs = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/tracks/contains?ids={track.SpotifyID}");
                 if (isInLikedSongs.Length > 0 && !isInLikedSongs[0])
                 {
@@ -340,8 +206,8 @@ namespace vue_spotify_app.Server
                         _dataContext.TrackRecords.Remove(trackRecord);
                     }
                 }
-
             }
+
             int offset = 0;
 
             while (apiUrl != null && !cancellationToken.IsCancellationRequested)
@@ -353,6 +219,11 @@ namespace vue_spotify_app.Server
                 {
                     if (!item.track.is_local)
                     {
+                        if(await _dataContext.TrackRecords.CountAsync(r => r.UserId == user.SpotifyUserID && r.SpotifyID == item.track.id && r.PlaylistID == null) > 0)
+                        {
+                            await _dataContext.SaveChangesAsync(cancellationToken);
+                            return;
+                        }
                         var track = await AddOrUpdateTrack(item.track);
                         /*// Gets or creates artist entities for the track
                         var trackArtists = new List<Classes.Artist>();
@@ -542,16 +413,6 @@ namespace vue_spotify_app.Server
                     break;
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns the number of tracks in the user's Liked Songs library.
-        /// </summary>
-        /// <param name="trackQuery">A string all tracks must include to be returned.</param>
-        /// <returns>The number of tracks that match the srting provided.</returns>
-        public int GetNumberOfTracks(string trackQuery)
-        {
-            return _dataContext.Tracks.Count(t => t.Name.Contains(trackQuery) && _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null));
         }
 
         /// <summary>
@@ -763,6 +624,24 @@ namespace vue_spotify_app.Server
             return trackEntity;
         }
 
+        /// <summary>
+        /// Function to update a track on Spotify with the latest information pulled via an API call.
+        /// </summary>
+        /// <param name="trackID">The ID of the track.</param>
+        public async Task SyncTrack(string trackID)
+        {
+            // Gets the first user from the database. This assumes the application is a single user application.
+            // If the application was expanded to include multiple users, this would likely pull an administrator account.
+            var user = await _dataContext.Users.FirstOrDefaultAsync();
+            // Makes an API call with the track ID.
+            var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
+            // If track exists, updates the track information in the database.
+            if (track != null)
+            {
+                await AddOrUpdateTrack(track);
+                await _dataContext.SaveChangesAsync();
+            }
+        }
     }
 }
 
