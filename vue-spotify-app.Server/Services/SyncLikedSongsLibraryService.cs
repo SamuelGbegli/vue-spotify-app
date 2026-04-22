@@ -31,7 +31,7 @@ namespace vue_spotify_app.Server.Services
                             if (stoppingToken.IsCancellationRequested) break;
                             using (var userScope = _scopeFactory.CreateScope())
                             {
-                                var likedSongsLibraryService = scope.ServiceProvider.GetRequiredService<TrackService>();
+                                var likedSongsLibraryService = userScope.ServiceProvider.GetRequiredService<TrackService>();
                                 await likedSongsLibraryService.InitialiseTracks(id, cancellationToken: stoppingToken);
                             }
                         }
