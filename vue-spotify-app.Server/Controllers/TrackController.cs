@@ -103,7 +103,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _trackService.GetTracksNew(
+                var data = await _trackService.GetTracks(
                     spotifyUserID: user.SpotifyUserID,
                      playlistId: playlistId,
                      filter: filter,

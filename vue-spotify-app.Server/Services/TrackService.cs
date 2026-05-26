@@ -17,7 +17,7 @@ namespace vue_spotify_app.Server
             _spotifyAPIWrapper = spotifyAPIWrapper;
         }
 
-        public async Task<(int, List<TrackViewModel>)> GetTracksNew(string spotifyUserID, TrackFilter filter, string? playlistId = null, int offset = 0, int numberOfTracks = 50)
+        public async Task<(int, List<TrackViewModel>)> GetTracks(string spotifyUserID, TrackFilter filter, string? playlistId = null, int offset = 0, int numberOfTracks = 50)
         {
 
             var trackRecords = _dataContext.TrackRecords
