@@ -117,25 +117,40 @@
   import { date, Dialog, Loading, Notify } from 'quasar';
   import { computed, onBeforeMount, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import TrackViewModelBatch from '@/classes/trackViewModelBatch';
 
 
   const authStore = useAuthStore()
   const route = useRoute()
   const router = useRouter()
 
+  // Stores the ID of the playlist whose tracks are to be fetched. If null,
+  // tracks from the Liked Songs library are fetched instead.
   const props = defineProps<{
     playlistId?: string | null
   }>()
 
+  // The total tracks stored in the playlist or Liked Songs library.
   const numberOftracks = ref<number | null>(null)
 
+  // The current page of tracks the user is on.
   const pageOffset = ref<number>(1)
 
+  // The maximun number of tracks to be fetched in a single request.
   const trackLimit = ref<number>(50)
 
   const trackQuery = ref<string>("")
 
-  const trackViewModels = ref<TrackViewModel[]>([])
+    // Stores batches of tracks fetched from the server.
+  const trackBatches = ref<TrackViewModelBatch[]>([])
+
+  const trackViewModels = computed(() => {
+    const allTracks: TrackViewModel[] = [];
+    trackBatches.value.forEach(batch => {
+      allTracks.push(...batch.trackViewModels);
+    })
+    return allTracks;
+  });
 
   const statusCode = ref<number | null>(null);
 
@@ -143,7 +158,9 @@
 
     const total = ref<number>(0);
 
+  // Represents the columns to be displayed in the table.
   const baseColumns = [
+    // Shows the album cover of the track.
     {
       name: "albumCover",
       label: "",
@@ -152,6 +169,7 @@
       sortable: false,
       style: "width: auto"
     },
+    // Shows the track's name.
     {
       name: "name",
       label: "Name",
@@ -160,6 +178,7 @@
       sortable: true,
       style: "width: 20%"
     },
+    // Shows the artists credited for the track.
     {
       name: "artists",
       label: "Artist",
@@ -168,6 +187,7 @@
       style: "width: 200px",
       sortable: true
     },
+    // Shows the name of the album the track comes from.
     {
       name: "albumName",
       label: "Album",
@@ -176,6 +196,7 @@
       style: "width: 200px",
       sortable: true
     },
+    // Shows the track's length in minutes and seconds.
     {
       name: "length",
       label: "Length",
@@ -184,6 +205,7 @@
       style: "width: 100px",
       sortable: true
     },
+    // Shows the date the track was added to the playlist or Liked Songs library.
     {
       name: "dateSaved",
       label: "Date saved",
@@ -192,6 +214,7 @@
       style: "width: 200px",
       sortable: true
     },
+    // Shows the date the track was last recorded as played, if applicable.
     {
       name: "lastPlayed",
       label: "Last play date",
@@ -200,6 +223,8 @@
       style: "width: 200px",
       sortable: true
     },
+    // Shows whether the track is in the user's Liked Songs library.
+    // Only displayed when viewing a playlist.
     {
       name: "inLikedSongs",
       label: "In Liked Songs?",
@@ -208,6 +233,7 @@
       style: "width: 150px",
       sortable: true
     },
+    // Shows a list of actions that can be performed with the track.
     {
       name: "actions",
       label: "Actions",
@@ -218,6 +244,7 @@
     }
   ];
 
+  // Generates the columns visible based on whether a playlist ID is provided.
   const columns = computed(() => {
     if(props.playlistId == null){
       return baseColumns.filter(x => x.name !== "inLikedSongs");
@@ -225,6 +252,7 @@
     return baseColumns;
   });
 
+  // Stores pagination values for the table.
   const pagination = ref({
     sortBy: "name",
     page: 1,
@@ -273,16 +301,10 @@
       query.append("sortType", filter.value.sortType.toString());
       query.append("sortOrder", filter.value.sortOrder.toString());
 
-      const response = await axios.get(`track/gettracks?${query.toString()}`,
-        {
-          headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
-        });
+      const response = await axios.get(`track/gettracks?${query.toString()}`);
       console.log(response.data)
       numberOftracks.value = response.data.totalTracks
-      response.data.tracks.forEach((i) => {
-        const trackViewModel: TrackViewModel = new TrackViewModel(i)
-        trackViewModels.value.push((trackViewModel))
-      })
+      trackBatches.value.push(response.data);
       statusCode.value = response.status;
     } catch (error) {
       const ex = error as AxiosError
@@ -290,7 +312,8 @@
     }
   }
 
-  async function onScroll({to, ref}){
+  async function onScroll({from, to, ref}){
+    const nearTop = from <= 10;
     const nearBottom = to >= trackViewModels.value.length - 10;
     if (nearBottom && trackViewModels.value.length < numberOftracks.value && statusCode.value != null){
         console.log("End of page reached");
