@@ -98,7 +98,6 @@ namespace vue_spotify_app.Server.Controllers
                     SortType = sortType,
                     SortOrder = sortOrder
                 };
-                // var tracks = await _trackService.GetTracks(trackQuery: trackQuery, offset: offset, numberOfTracks: numberOfTracks);
                 
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);

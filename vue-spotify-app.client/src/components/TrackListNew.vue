@@ -141,14 +141,13 @@
 
   const trackQuery = ref<string>("")
 
-    // Stores batches of tracks fetched from the server.
+  // Stores batches of tracks fetched from the server.
   const trackBatches = ref<TrackViewModelBatch[]>([])
 
+//  const maximumNumberOfBatches = ref(3);
+
   const trackViewModels = computed(() => {
-    const allTracks: TrackViewModel[] = [];
-    trackBatches.value.forEach(batch => {
-      allTracks.push(...batch.trackViewModels);
-    })
+    const allTracks = trackBatches.value.map(x => x.trackViewModels).flat();
     return allTracks;
   });
 
@@ -302,9 +301,16 @@
       query.append("sortOrder", filter.value.sortOrder.toString());
 
       const response = await axios.get(`track/gettracks?${query.toString()}`);
-      console.log(response.data)
+
       numberOftracks.value = response.data.totalTracks
-      trackBatches.value.push(response.data);
+      const batch = new TrackViewModelBatch();
+      batch.batchIndex = response.data.tracks.batchIndex;
+      response.data.tracks.trackViewModels.forEach((x: any) => {
+        batch.trackViewModels.push(new TrackViewModel(x));
+      });
+      trackBatches.value.push(batch);
+      console.log(batch);
+
       statusCode.value = response.status;
     } catch (error) {
       const ex = error as AxiosError

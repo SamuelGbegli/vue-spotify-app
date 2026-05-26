@@ -17,7 +17,13 @@ namespace vue_spotify_app.Server
             _spotifyAPIWrapper = spotifyAPIWrapper;
         }
 
-        public async Task<(int, List<TrackViewModel>)> GetTracks(string spotifyUserID, TrackFilter filter, string? playlistId = null, int offset = 0, int numberOfTracks = 50)
+        public async Task<(int, TrackViewModelBatch)> GetTracks(
+            string spotifyUserID,
+            TrackFilter filter,
+            string? playlistId = null,
+            int offset = 0,
+            int numberOfTracks = 50
+            )
         {
 
             var trackRecords = _dataContext.TrackRecords
@@ -144,6 +150,30 @@ namespace vue_spotify_app.Server
             var tracks = await query
                 .Skip(offset).Take(numberOfTracks).ToListAsync();
 
+            var trackBatch = new TrackViewModelBatch
+            {
+                BatchIndex = (int)Math.Ceiling((double)offset / (double)numberOfTracks),
+                TrackViewModels = tracks.Select(t => new TrackViewModel
+                {
+                    ID = t.Track.ID,
+                    Name = t.Track.Name,
+                    URI = t.Track.SpotifyURI,
+                    ExternalURL = t.Track.ExternalURL,
+                    AlbumName = t.Track.Album.Name,
+                    AlbumCover = t.Track.Album.AlbumCover.Link,
+                    AlbumURI = t.Track.Album.SpotifyURI,
+                    AlbumExternalURL = t.Track.Album.ExternalURL,
+                    Length = t.Track.Length,
+                    DateSaved = t.DateAdded,
+                    Artists = t.Track.Artists.OrderBy(a => a.SortName).Select(a => new Classes.Artist
+                    {
+                        Name = a.Name,
+                        ExternalURL = a.ExternalURL
+                    }).ToList(),
+                    DateLastPlayed = t.LastPlayed,
+                    IsInLikedSongs = t.IsLiked
+                }).ToList()
+            };
             var viewModels = new List<TrackViewModel>();
 
             // Converts track objects to view models
@@ -173,7 +203,7 @@ namespace vue_spotify_app.Server
             }
 
             // Returns number of tracks found and list of track view models
-            return (total, viewModels);
+            return (total, trackBatch);
         }
 
         /// <summary>
