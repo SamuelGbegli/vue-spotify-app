@@ -108,7 +108,7 @@
     </QTable>
   </div>
     </div>
-    <div class="col-5">
+    <!--<div class="col-5">
       <div class="row">
         <div class="text-h5">Selected tracks</div>
         <QSpace />
@@ -184,7 +184,7 @@
             </QTd>
           </template>
         </QTable>
-      </div>
+      </div>-->
     </div>
   </div>
 </template>
