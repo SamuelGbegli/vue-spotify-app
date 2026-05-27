@@ -136,7 +136,7 @@
   // The current page of tracks the user is on.
   const pageOffset = ref<number>(1)
 
-  // The maximun number of tracks to be fetched in a single request.
+  // The maximum number of tracks to be fetched in a single request.
   const trackLimit = ref<number>(50)
 
   const trackQuery = ref<string>("")
@@ -144,7 +144,7 @@
   // Stores batches of tracks fetched from the server.
   const trackBatches = ref<TrackViewModelBatch[]>([])
 
-//  const maximumNumberOfBatches = ref(3);
+  const maximumNumberOfBatches = ref(3);
 
   const trackViewModels = computed(() => {
     const allTracks = trackBatches.value.map(x => x.trackViewModels).flat();
@@ -272,7 +272,7 @@
     await getTracks();
   })
 
-  async function getTracks(reset = false) {
+  async function getTracks(addToTop:boolean = false, reset = false) {
 
     console.log(route.query, pageOffset.value);
     //pageOffset.value = route.query.page ? parseInt(route.query.page.toString()) : 1
@@ -282,7 +282,7 @@
 
     if(reset){
         pageOffset.value = 1;
-        trackViewModels.value = [];
+        trackBatches.value = [];
     }
 
     try {
@@ -308,7 +308,18 @@
       response.data.tracks.trackViewModels.forEach((x: any) => {
         batch.trackViewModels.push(new TrackViewModel(x));
       });
-      trackBatches.value.push(batch);
+      if(addToTop){
+        if(trackBatches.value.length >= 3){
+          trackBatches.value.pop();
+        }
+        trackBatches.value.unshift(batch);
+      }
+      else{
+        if(trackBatches.value.length >= 3){
+          trackBatches.value.shift();
+        }
+        trackBatches.value.push(batch);
+      }
       console.log(batch);
 
       statusCode.value = response.status;
@@ -318,15 +329,28 @@
     }
   }
 
-  async function onScroll({from, to, ref}){
-    const nearTop = from <= 10;
-    const nearBottom = to >= trackViewModels.value.length - 10;
-    if (nearBottom && trackViewModels.value.length < numberOftracks.value && statusCode.value != null){
-        console.log("End of page reached");
-        pageOffset.value += 1;
+  async function onScroll({from, to, index, ref}){
+    const nearTop = from <= 5;
+    const nearBottom = to >= trackViewModels.value.length - 5;
+    console.log(pageOffset.value);
+    if(trackViewModels.value.length > trackLimit.value){
+      if(nearTop && Math.min(...trackBatches.value.map(x => x.batchIndex)) > 1  && statusCode.value != null){
+      console.log("Top of page reached", trackBatches.value);
+        pageOffset.value = trackBatches.value.length > 0 ? Math.min(...trackBatches.value.map(x => x.batchIndex)) - 1 : 1;
+        console.log(pageOffset.value);
+        await getTracks(true);
+        if(trackBatches.value[0]?.batchIndex != 1) ref.scrollTo(index + trackBatches.value[0].trackViewModels.length, 0);
+    }
+    if (nearBottom && Math.max(...trackBatches.value.map(x => x.batchIndex)) < Math.ceil(pagination.value.rowsNumber / trackLimit.value) && statusCode.value != null){
+      console.log("End of page reached", trackBatches.value);
+        pageOffset.value = trackBatches.value.length > 0 ? Math.max(...trackBatches.value.map(x => x.batchIndex)) + 1 : 1;
+        console.log(pageOffset.value);
         await getTracks();
+        if(trackBatches.value[0]?.batchIndex != 1) ref.scrollTo(index - trackBatches.value[0].trackViewModels.length, 0);
+    }
     }
   }
+
 
   function copyTrackIdToClipboard(trackId: string) {
     navigator.clipboard.writeText(trackId).then(() => {
@@ -354,7 +378,7 @@
     query.append("sort", filter.value.sortType.toString());
     query.append("order", filter.value.sortOrder.toString());
     router.push(!!props.playlistId ? `/playlists/${props.playlistId}?${query.toString()}` : `/?${query.toString()}`);
-    await getTracks();
+    await getTracks(false, true);
   }
 
   function openQueueDialog(trackId: string, name: string) {

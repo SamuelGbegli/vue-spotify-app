@@ -152,7 +152,7 @@ namespace vue_spotify_app.Server
 
             var trackBatch = new TrackViewModelBatch
             {
-                BatchIndex = (int)Math.Ceiling((double)offset / (double)numberOfTracks),
+                BatchIndex = (int)Math.Ceiling((double)offset / (double)numberOfTracks) + 1,
                 TrackViewModels = tracks.Select(t => new TrackViewModel
                 {
                     ID = t.Track.ID,
