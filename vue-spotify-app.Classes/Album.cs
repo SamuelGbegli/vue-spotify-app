@@ -14,7 +14,7 @@ namespace vue_spotify_app.Classes
     {
         /// <summary>
         /// The Spotify ID for the album.
-        /// </summary>
+        /// </summary> 
 
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public string ID { get; set; }
@@ -35,6 +35,10 @@ namespace vue_spotify_app.Classes
         /// </summary>
         /// 
         public string ReleaseDate { get; set; }
+        /// <summary>
+        /// The known precision of the release date. Can be year, month or day.
+        /// </summary>
+        public string ReleaseDatePrecision { get; set; }
         /// <summary>
         /// A list of tracks that belong to the album.
         /// </summary>
@@ -71,6 +75,7 @@ namespace vue_spotify_app.Classes
             Name = album.name;
             NumberOfTracks = album.total_tracks;
             ReleaseDate = album.release_date;
+            ReleaseDatePrecision = album.release_date_precision;
             SpotifyURI = album.uri;
             ExternalURL = album.external_urls.spotify;
             AlbumType = album.album_type;

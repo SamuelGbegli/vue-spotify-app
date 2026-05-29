@@ -172,7 +172,7 @@ namespace vue_spotify_app.Server
         /// <param name="numberOfRecords"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<(int, List<PlaybackRecordViewModel>)> GetPlaybackRecords(Guid userId, int offset = 0, int numberOfRecords = 50, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<(int, List<PlaybackRecordViewModel>)> GetPlaybackRecords(User user, int offset = 0, int numberOfRecords = 50, DateTime? startDate = null, DateTime? endDate = null)
         {
             //TODO: add more sorting methods
             var query = _dataContext.PlaybackRecords.AsQueryable();
@@ -214,29 +214,30 @@ namespace vue_spotify_app.Server
             foreach (var record in records)
             {
                 // Deserialize JSON response to object
-                var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(userId, $"tracks/{record.SpotifyID}");
+                var track = await _dataContext.Tracks
+                .Include(t => t.Artists)
+                .Include(t => t.Album)
+                .ThenInclude(a => a.AlbumCover)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.ID == record.SpotifyID);
 
                 var viewModel = new PlaybackRecordViewModel
                 {
                     DatePlayed = record.DatePlayed,
-                    Name = track.name,
-                    TrackURL = track.external_urls.spotify,
-                    AlbumName = track.album.name,
-                    AlbumLink = track.album.external_urls.spotify,
-                    AlbumCover = track.album.images.FirstOrDefault().url,
-                    SpotifyID = track.id
-                };
-                foreach (var artist in track.artists)
-                {
-                    viewModel.Artists.Add(new Classes.Artist
+                    Name = track.Name,
+                    TrackURL = track.ExternalURL,
+                    Artists = track.Artists.Select(a => new Classes.Artist
                     {
-                        Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify,
-                    });
-                }
-                        ;
-                var isInLikedSongsMessage = await _spotifyAPIWrapper.GetAsync<List<bool>>(userId, $"me/tracks/contains?ids={track.id}");
-                viewModel.IsInLikedSongs = isInLikedSongsMessage.First();
+                        Name = a.Name,
+                        ExternalURL = a.ExternalURL
+                    }).ToList(),
+                    AlbumName = track.Album.Name,
+                    AlbumLink = track.Album.ExternalURL,
+                    AlbumCover = track.Album.AlbumCover.Link,
+                    SpotifyID = track.ID
+                };
+                
+                viewModel.IsInLikedSongs = _dataContext.TrackRecords.Count(t => t.SpotifyID == record.SpotifyID && t.PlaylistID == null && t.UserId == user.SpotifyUserID) > 0;
                 viewModels.Add(viewModel);
             }
 

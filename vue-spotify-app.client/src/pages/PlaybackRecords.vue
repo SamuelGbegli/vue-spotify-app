@@ -356,6 +356,7 @@
       const response = await axios.get(
         `playbackrecord/getrecords?${searchParams}`,
       );
+      console.log(response.data);
       playbackRecords.value = [];
       response.data.records.forEach(element => {
         const viewModel = new PlaybackRecordViewModel();
