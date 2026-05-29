@@ -20,6 +20,7 @@ builder.Services.AddDbContextPool<DataContext>(options =>
     var databaseContext = builder.Configuration["ConnectionStrings:DatabaseContext"];
     options.UseSqlServer(databaseContext ?? throw new InvalidOperationException("Connection string 'DatabaseContext' not found."));
     options.EnableSensitiveDataLogging();
+    options.LogTo(Console.WriteLine, LogLevel.Information);
 
 }, poolSize: 32);
 

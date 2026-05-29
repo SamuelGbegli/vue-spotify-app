@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using vue_spotify_app.Classes;
@@ -117,18 +118,23 @@ namespace vue_spotify_app.Server.Controllers
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             try {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
-                var user = await _dataContext.Users.Include(u => u.SpotifyToken).FirstOrDefaultAsync(u => u.ID.ToString() == userId);
-                var data = await _playbackRecordService.GetPlaybackRecords(user.ID, offset, numberOfRecords, startDate, endDate);
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var data = await _playbackRecordService.GetPlaybackRecords(user, offset, numberOfRecords, startDate, endDate);
+                stopwatch.Stop();
                 return Ok(new
                 {
+                    elapsedTime = stopwatch.ElapsedMilliseconds,
                     records = data.Item2,
                     totalRecords = data.Item1
                 });
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
                 return StatusCode(500, ex.Message);
             }
         }

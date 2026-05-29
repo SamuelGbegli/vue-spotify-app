@@ -17,8 +17,17 @@ namespace vue_spotify_app.Server
             _spotifyAPIWrapper = spotifyAPIWrapper;
         }
 
-        public async Task<(int, List<TrackViewModel>)> GetTracksNew(string spotifyUserID, TrackFilter filter, string? playlistId = null, int offset = 0, int numberOfTracks = 50)
+        public async Task<(int, List<TrackViewModelBatch>)> GetTracks(
+            string spotifyUserID,
+            TrackFilter filter,
+            List<int> offsets,
+            string? playlistId = null,
+            int numberOfTracks = 50
+            )
         {
+            var batches = new List<TrackViewModelBatch>();
+
+            if (offsets == null) offsets = new List<int> { 0 };
 
             var trackRecords = _dataContext.TrackRecords
                 .Where(r => r.PlaylistID == playlistId && r.UserId == spotifyUserID)
@@ -141,39 +150,48 @@ namespace vue_spotify_app.Server
             var total = await query.CountAsync();
 
             // Geta all tracks found in the query
-            var tracks = await query
-                .Skip(offset).Take(numberOfTracks).ToListAsync();
-
-            var viewModels = new List<TrackViewModel>();
-
-            // Converts track objects to view models
-            foreach (var item in tracks)
+            foreach (var index in offsets)
             {
-                var viewModel = new TrackViewModel
+                var sql = query
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                    .ToQueryString();
+               Console.WriteLine(sql);
+
+                var tracks = await query
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                .Skip(index).Take(numberOfTracks).ToListAsync();
+
+                var trackBatch = new TrackViewModelBatch
                 {
-                    ID = item.Track.ID,
-                    Name = item.Track.Name,
-                    URI = item.Track.SpotifyURI,
-                    ExternalURL = item.Track.ExternalURL,
-                    AlbumName = item.Track.Album.Name,
-                    AlbumCover = item.Track.Album.AlbumCover.Link,
-                    AlbumURI = item.Track.Album.SpotifyURI,
-                    AlbumExternalURL = item.Track.Album.ExternalURL,
-                    Length = item.Track.Length,
-                    DateSaved = item.DateAdded,
-                    Artists = item.Track.Artists.OrderBy(a => a.SortName).Select(a => new Classes.Artist
+                    BatchIndex = (int)Math.Ceiling((double)index / (double)numberOfTracks) + 1,
+                    TrackViewModels = tracks.Select(t => new TrackViewModel
                     {
-                        Name = a.Name,
-                        ExternalURL = a.ExternalURL
-                    }).ToList(),
-                    DateLastPlayed = item.LastPlayed
+                        ID = t.Track.ID,
+                        Name = t.Track.Name,
+                        URI = t.Track.SpotifyURI,
+                        ExternalURL = t.Track.ExternalURL,
+                        AlbumName = t.Track.Album.Name,
+                        AlbumCover = t.Track.Album.AlbumCover.Link,
+                        AlbumURI = t.Track.Album.SpotifyURI,
+                        AlbumExternalURL = t.Track.Album.ExternalURL,
+                        Length = t.Track.Length,
+                        DateSaved = t.DateAdded,
+                        Artists = t.Track.Artists.OrderBy(a => a.SortName).Select(a => new Classes.Artist
+                        {
+                            Name = a.Name,
+                            ExternalURL = a.ExternalURL
+                        }).ToList(),
+                        DateLastPlayed = t.LastPlayed,
+                        IsInLikedSongs = t.IsLiked
+                    }).ToList()
                 };
-                if (!string.IsNullOrWhiteSpace(playlistId)) viewModel.IsInLikedSongs = item.IsLiked;
-                viewModels.Add(viewModel);
+                batches.Add(trackBatch);
             }
 
             // Returns number of tracks found and list of track view models
-            return (total, viewModels);
+            return (total, batches);
         }
 
         /// <summary>
@@ -544,6 +562,7 @@ namespace vue_spotify_app.Server
                     Name = album.name,
                     SortName = RegexHelpers.GenerateSortName(album.name),
                     ReleaseDate = album.release_date,
+                    ReleaseDatePrecision = album.release_date_precision,
                     NumberOfTracks = album.total_tracks,
                     Artists = albumArtists,
                     SpotifyURI = album.uri,
@@ -568,6 +587,7 @@ namespace vue_spotify_app.Server
                     albumEntity.SortName = RegexHelpers.GenerateSortName(album.name);
                 }
                 albumEntity.ReleaseDate = album.release_date;
+                albumEntity.ReleaseDatePrecision = album.release_date_precision;
                 albumEntity.NumberOfTracks = album.total_tracks;
                 albumEntity.SpotifyURI = album.uri;
                 albumEntity.ExternalURL = album.external_urls.spotify;

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using vue_spotify_app.Server.Data;
 
@@ -11,9 +12,11 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20260528123044_AddReleaseDatePrecision")]
+    partial class AddReleaseDatePrecision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -261,10 +264,6 @@ namespace vue_spotify_app.Server.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OwnerName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SnapshotID")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
