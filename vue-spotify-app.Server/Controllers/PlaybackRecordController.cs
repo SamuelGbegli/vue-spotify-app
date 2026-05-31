@@ -188,7 +188,7 @@ namespace vue_spotify_app.Server.Controllers
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
-                var records = await _playbackRecordService.GetTracksGroupedByPlaybackRecordsNew(user.ID, offset, numberOfTracks, startDate, endDate);
+                var records = await _playbackRecordService.GetTracksGroupedByPlaybackRecordsV2(user.ID, offset, numberOfTracks, startDate, endDate);
                 return Ok(new
                 {
                     totalRecords = records.Item1,

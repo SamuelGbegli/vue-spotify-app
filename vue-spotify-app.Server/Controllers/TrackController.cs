@@ -102,7 +102,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _trackService.GetTracks(
+                var data = await _trackService.GetTracksNew(
                     spotifyUserID: user.SpotifyUserID,
                      playlistId: playlistId,
                      filter: filter,
@@ -110,15 +110,8 @@ namespace vue_spotify_app.Server.Controllers
                      numberOfTracks: numberOfTracks);
 
                 stopwatch.Stop();
-                var newTimeElapsed = await _trackService.GetTracksNew(
-                    spotifyUserID: user.SpotifyUserID,
-                     playlistId: playlistId,
-                     filter: filter,
-                     offset: offset,
-                     numberOfTracks: numberOfTracks);
                 return Ok(new
                 {
-                    newTimeElapsed,
                     timeElapsed = stopwatch.Elapsed,
                     totalTracks =data.Item1,
                     tracks = data.Item2

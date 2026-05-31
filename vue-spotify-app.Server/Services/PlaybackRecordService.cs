@@ -179,23 +179,10 @@ namespace vue_spotify_app.Server
 
             // Section for if a start date and end date is provided: only gets records that are between the
             // lowest and highest values inclusive
-            if (startDate != null && endDate != null)
-            {
-                // Creates list of date values to fetch the min and max values
-                var dates = new List<DateTime>
-                {
-                    startDate.Value, endDate.Value
-                };
-                query = query.Where(r => r.DatePlayed >= dates.Min() && r.DatePlayed < dates.Max().AddDays(1));
-
-            }
-            else
-            {
-                if (startDate != null)
-                    query = query.Where(r => r.DatePlayed >= startDate.Value);
-                if (endDate != null)
-                    query = query.Where(r => r.DatePlayed < endDate.Value.AddDays(1));
-            }
+            if (startDate != null)
+                query = query.Where(r => r.DatePlayed >= startDate.Value);
+            if (endDate != null)
+                query = query.Where(r => r.DatePlayed < endDate.Value.AddDays(1));
 
             var totalRecords = await query.CountAsync();
 
@@ -208,9 +195,6 @@ namespace vue_spotify_app.Server
             var viewModels = new List<PlaybackRecordViewModel>();
 
 
-
-            // Gets track information from Spotify
-            // Makes call to API
             foreach (var record in records)
             {
                 // Deserialize JSON response to object
@@ -236,8 +220,15 @@ namespace vue_spotify_app.Server
                     AlbumCover = track.Album.AlbumCover.Link,
                     SpotifyID = track.ID
                 };
-                
-                viewModel.IsInLikedSongs = _dataContext.TrackRecords.Count(t => t.SpotifyID == record.SpotifyID && t.PlaylistID == null && t.UserId == user.SpotifyUserID) > 0;
+
+                var likedSongsAliasIDs = 
+                    from t in _dataContext.Tracks
+                    join tr in _dataContext.TrackRecords on t.ID equals tr.SpotifyID
+                    where tr.PlaylistID == null && tr.UserId == user.SpotifyUserID
+                    select t.AliasID;
+
+
+                viewModel.IsInLikedSongs = likedSongsAliasIDs.Contains(track.AliasID);
                 viewModels.Add(viewModel);
             }
 
@@ -317,178 +308,6 @@ namespace vue_spotify_app.Server
              return records.Select(x => x.DatePlayed).ToList();
         }
 
-        /// <summary>
-        /// Returns the number of pages of playback records the user can browse.
-        /// </summary>
-        /// <param name="recordsPerPage"></param>
-        /// <returns></returns>
-        public async Task<int> GetPagesOfRecords(int recordsPerPage = 50, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var values = 0;
-            if (startDate != null && endDate != null)
-            {
-                var dates = new List<DateTime>
-                {
-                    startDate.Value, endDate.Value
-                };
-                values = await _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed >= dates.Min() && r.DatePlayed <= dates.Max().AddDays(1))
-                    .CountAsync();
-            }
-            else if (startDate == null && endDate != null)
-            {
-                values = await _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed <= endDate.Value)
-                    .CountAsync();
-            }
-            else if (endDate == null && startDate != null)
-            {
-                values = await _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed >= startDate.Value)
-                    .CountAsync();
-            }
-            else
-            {
-                values = await _dataContext.PlaybackRecords.CountAsync();
-            }
-            return (int)Math.Ceiling(values / (decimal)recordsPerPage);
-        }
-
-        public int GetPagesOfGroupedRecords(int numberOfRecords, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var records = new List<IGrouping<string, PlaybackRecord>>();
-            if (startDate != null && endDate != null)
-            {
-                var dates = new List<DateTime>
-                {
-                    startDate.Value, endDate.Value
-                };
-                records = _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed >= dates.Min() && r.DatePlayed <= dates.Max().AddDays(1))
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .ToList();
-            }
-            else if (startDate == null && endDate != null)
-            {
-                records = _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed <= endDate.Value)
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .ToList();
-            }
-            else if (endDate == null && startDate != null)
-            {
-                records = _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed >= startDate.Value)
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .ToList();
-            }
-            else
-            {
-                records = _dataContext.PlaybackRecords
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .ToList();
-            }
-            return (int)Math.Ceiling(records.Count() / (double)numberOfRecords);
-        }
-
-        /// <summary>
-        /// Returns tracks and the number of matching playback records.
-        /// </summary>
-        /// <param name="authToken"></param>
-        /// <param name="offset"></param>
-        /// <param name="numberOfRecords"></param>
-        /// <returns></returns>
-        public async Task<List<TrackViewModel>> GetTracksGroupedByPlaybackRecords(Guid userId, int offset = 0, int numberOfRecords = 50, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var viewModels = new List<TrackViewModel>();
-            var records = new List<IGrouping<string, PlaybackRecord>>();
-            if (startDate != null && endDate != null)
-            {
-                var dates = new List<DateTime>
-                {
-                    startDate.Value, endDate.Value
-                };
-                records = _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed >= dates.Min() && r.DatePlayed <= dates.Max().AddDays(1))
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .OrderByDescending(g => g.Count())
-                    .Skip((offset - 1) * numberOfRecords)
-                    .Take(numberOfRecords)
-                    .ToList();
-            }
-            else if (startDate == null && endDate != null)
-            {
-                records = _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed <= endDate.Value)
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .OrderByDescending(g => g.Count())
-                    .Skip((offset - 1) * numberOfRecords)
-                    .Take(numberOfRecords)
-                    .ToList();
-            }
-            else if (endDate == null && startDate != null)
-            {
-                records = _dataContext.PlaybackRecords
-                    .Where(r => r.DatePlayed >= startDate.Value)
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .OrderByDescending(g => g.Count())
-                    .Skip((offset - 1) * numberOfRecords)
-                    .Take(numberOfRecords)
-                    .ToList();
-            }
-            else
-            {
-                records = _dataContext.PlaybackRecords
-                    .AsEnumerable()
-                    .GroupBy(r => r.SpotifyID)
-                    .OrderByDescending(g => g.Count())
-                    .Skip((offset - 1) * numberOfRecords)
-                    .Take(numberOfRecords)
-                    .ToList();
-            }
-
-            var trackRecords = records.ToList();
-
-
-            foreach (var trackRecord in trackRecords)
-            {
-
-                var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(userId, $"tracks/{trackRecord.Key}");
-
-                var viewModel = new TrackViewModel
-                {
-                    ID = trackRecord.Key,
-                    Name = track.name,
-                    ExternalURL = track.external_urls.spotify,
-                    AlbumName = track.album.name,
-                    AlbumExternalURL = track.album.external_urls.spotify,
-                    AlbumCover = track.album.images.LastOrDefault().url,
-                    NumberOfFoundRecords = trackRecord.Count()
-                };
-
-                foreach (var artist in track.artists)
-                {
-                    viewModel.Artists.Add(new Classes.Artist
-                    {
-                        Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify
-                    });
-                }
-
-
-                viewModels.Add(viewModel);
-
-            }
-            return viewModels;
-        }
-
         public async Task<(int, List<TrackViewModel>)> GetTracksGroupedByPlaybackRecordsNew(Guid userId, int offset = 0, int numberOfRecords = 50, DateTime? startDate = null, DateTime? endDate = null)
         {
 
@@ -540,10 +359,12 @@ namespace vue_spotify_app.Server
 
                 foreach (var artist in track.artists)
                 {
-                    viewModel.Artists.Add(new Classes.Artist
+                    viewModel.Artists.Add(new Classes.ArtistViewModel
                     {
+                        ID = artist.id,
                         Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify
+                        ExternalURL = artist.external_urls.spotify,
+                        Index = track.artists.IndexOf(artist)
                     });
                 }
 
@@ -551,6 +372,87 @@ namespace vue_spotify_app.Server
                 viewModels.Add(viewModel);
 
             }
+            return (totalRecords, viewModels);
+        }
+
+        public async Task<(int, List<TrackViewModel>)> GetTracksGroupedByPlaybackRecordsV2(
+            Guid userId, 
+            int offset = 0, 
+            int numberOfRecords = 50, 
+            DateTime? startDate = null, 
+            DateTime? endDate = null
+            )
+        {
+
+            var query = _dataContext.PlaybackRecords.AsQueryable();
+
+            if(startDate != null)
+            {
+                query = query.Where(r => r.DatePlayed >= startDate.Value);
+            }
+            if(endDate != null)
+            {
+                query = query.Where(r => r.DatePlayed < endDate.Value.AddDays(1));
+            }
+
+            var groupedQuery =
+                from r in query
+                join t in _dataContext.Tracks
+                    on r.SpotifyID equals t.ID
+                group r by t.AliasID into g
+                select new
+                {
+                    AliasID = g.Key,
+                    Count = g.Count(),
+                };
+
+            var totalRecords = await groupedQuery.CountAsync();
+
+            var groupedPage = await groupedQuery
+                .OrderByDescending(g => g.Count)
+                .Skip((offset - 1) * numberOfRecords)
+                .Take(numberOfRecords)
+                .ToListAsync();
+
+            var aliasIDs = groupedPage.Select(g => g.AliasID).ToList();
+
+            var tracks = await _dataContext.Tracks
+                .Where(t => aliasIDs.Contains(t.AliasID) && !string.IsNullOrWhiteSpace(t.Name))
+                .Include(t => t.Artists)
+                .Include(t => t.Album)
+                    .ThenInclude(a => a.AlbumCover)
+                .ToListAsync();
+
+            var trackDictionary = tracks.GroupBy(t => t.AliasID).ToDictionary(g => g.Key, g => g.First());
+
+            var viewModels = groupedPage.Select(g =>
+            {
+                if (trackDictionary.TryGetValue(g.AliasID, out var track))
+                {
+                    var viewModel = new TrackViewModel
+                    {
+                        ID = track.ID,
+                        Name = track.Name,
+                        ExternalURL = track.ExternalURL,
+                        AlbumName = track.Album.Name,
+                        AlbumExternalURL = track.Album.ExternalURL,
+                        AlbumCover = track.Album.AlbumCover.Link,
+                        NumberOfFoundRecords = g.Count
+                    };
+                    foreach (var artist in track.Artists)
+                    {
+                        viewModel.Artists.Add(new Classes.ArtistViewModel
+                        {
+                            ID = artist.ID,
+                            Name = artist.Name,
+                            ExternalURL = artist.ExternalURL,
+                            Index = artist.TrackArtists.FirstOrDefault(ta => ta.TrackID == track.ID)?.Index ?? 0
+                        });
+                    }
+                    return viewModel;
+                }
+                return null;
+            }).Where(vm => vm != null).ToList();
             return (totalRecords, viewModels);
         }
 
