@@ -282,8 +282,16 @@ namespace vue_spotify_app.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("AlbumSortName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("AliasID")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ArtistSortName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Explicit")
                         .HasColumnType("bit");

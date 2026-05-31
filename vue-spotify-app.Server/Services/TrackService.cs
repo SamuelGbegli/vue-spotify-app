@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using vue_spotify_app.Classes;
 using vue_spotify_app.Classes.APIData;
 using vue_spotify_app.Classes.SortNameHelpers;
@@ -192,6 +193,26 @@ namespace vue_spotify_app.Server
 
             // Returns number of tracks found and list of track view models
             return (total, batches);
+        }
+
+        public async Task<TimeSpan> GetTracksNew(string spotifyUserID, TrackFilter filter, string? playlistId = null, int offset = 0, int numberOfTracks = 50)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var query =
+                from tr in _dataContext.TrackRecords
+                join t in _dataContext.Tracks
+                    on tr.SpotifyID equals t.ID
+                where tr.UserId == spotifyUserID
+                    && tr.PlaylistID == playlistId
+                select new
+                {
+                    TrackID = t.ID,
+                    t.AliasID,
+                    tr.DateAdded
+                };
+            stopwatch.Stop();
+            return stopwatch.Elapsed;
         }
 
         /// <summary>
@@ -612,7 +633,9 @@ namespace vue_spotify_app.Server
                     SortName = RegexHelpers.GenerateSortName(track.name),
                     AlbumID = track.album.id,
                     Album = albumEntity,
+                    AlbumSortName = albumEntity.SortName,
                     Artists = trackArtists,
+                    ArtistSortName = trackArtists.First().SortName,
                     SpotifyURI = track.uri,
                     ExternalURL = track.external_urls.spotify,
                     Length = track.duration_ms,
@@ -629,7 +652,10 @@ namespace vue_spotify_app.Server
                     trackEntity.Name = track.name;
                     trackEntity.SortName = RegexHelpers.GenerateSortName(track.name);
                 }
+                trackEntity.ArtistSortName = trackArtists.First().SortName;
                 trackEntity.AlbumID = track.album.id;
+                trackEntity.Album = albumEntity;
+                trackEntity.AlbumSortName = albumEntity.SortName;
                 trackEntity.SpotifyURI = track.uri;
                 trackEntity.ExternalURL = track.external_urls.spotify;
                 trackEntity.Length = track.duration_ms;

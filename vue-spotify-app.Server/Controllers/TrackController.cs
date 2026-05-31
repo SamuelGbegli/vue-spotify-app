@@ -110,10 +110,17 @@ namespace vue_spotify_app.Server.Controllers
                      numberOfTracks: numberOfTracks);
 
                 stopwatch.Stop();
+                var newTimeElapsed = await _trackService.GetTracksNew(
+                    spotifyUserID: user.SpotifyUserID,
+                     playlistId: playlistId,
+                     filter: filter,
+                     offset: offset,
+                     numberOfTracks: numberOfTracks);
                 return Ok(new
                 {
-                    timeElapsed = stopwatch.ElapsedMilliseconds,
-                    totalTracks = data.Item1,
+                    newTimeElapsed,
+                    timeElapsed = stopwatch.Elapsed,
+                    totalTracks =data.Item1,
                     tracks = data.Item2
                 });
             }
@@ -177,7 +184,7 @@ namespace vue_spotify_app.Server.Controllers
             // TODO: rewrite function to create and return CSV file
             try
             {
-
+                //var tracks = await _trackService.GetTracks();
                 return Ok();
             }
             catch (Exception ex)
