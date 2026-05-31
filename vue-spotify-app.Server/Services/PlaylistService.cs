@@ -158,6 +158,7 @@ namespace vue_spotify_app.Server
              return viewModel;
         }
 
+        //TODO: remove
         public async Task<List<TrackViewModel>> GetPlaylistTracks(
             string playlistId,
             string trackQuery = "",
@@ -385,9 +386,9 @@ namespace vue_spotify_app.Server
                             {
                                 tracksToAdd.Add(track);
                             }
-                            if(await _dataContext.TrackRecords.CountAsync(r => 
+                            if (await _dataContext.TrackRecords.CountAsync(r =>
                             r.SpotifyID == item.track.id &&
-                            r.PlaylistID == playlist.ID
+                            r.PlaylistID == playlist.ID && r.DateAdded == DateTime.Parse(item.added_at)
                             ) == 0)
                             {
                                 await _dataContext.TrackRecords.AddAsync(new TrackRecord
@@ -397,13 +398,20 @@ namespace vue_spotify_app.Server
                                     PlaylistID = playlist.ID,
                                     DateAdded = DateTime.Parse(item.added_at)
                                 });
+                                if (tracksToAdd.Count >= bufferSize)
+                                {
+                                    await _dataContext.Tracks.AddRangeAsync(tracksToAdd);
+                                    await _dataContext.SaveChangesAsync();
+                                    Debug.WriteLine($"Added ${tracksToAdd.Count} tracks from ${playlist.Name}");
+                                    tracksToAdd.Clear();
+                                }
                             }
-                            if (tracksToAdd.Count >= bufferSize)
+                            else
                             {
                                 await _dataContext.Tracks.AddRangeAsync(tracksToAdd);
-                                await _dataContext.SaveChangesAsync();
-                                Debug.WriteLine($"Added ${tracksToAdd.Count} tracks from ${playlist.Name}");
                                 tracksToAdd.Clear();
+                                await _dataContext.SaveChangesAsync();
+                                return;
                             }
                         }
                         endpoint = playlistRespone.next != null ? playlistRespone.next.Replace("https://api.spotify.com/v1/", "") : null;
@@ -510,11 +518,12 @@ namespace vue_spotify_app.Server
                             NumberOfTracks = playlist.items.total,
                             OwnerName = playlist.owner.display_name,
                             OwnerID = playlist.owner.id,
-                            ImageURL = imageLink
+                            ImageURL = imageLink,
+                            SnapshotID = playlist.snapshot_id
                         };
                         playlistsToAdd.Add(playlistEntity);
                     }
-                    else
+                    else if(playlistEntity.SnapshotID != playlist.snapshot_id)
                     {
                         playlistEntity.Name = playlist.name;
                         playlistEntity.SortName = RegexHelpers.GenerateSortName(playlist.name);
@@ -522,7 +531,9 @@ namespace vue_spotify_app.Server
                         playlistEntity.OwnerName = playlist.owner.display_name;
                         playlistEntity.OwnerID = playlist.owner.id;
                         playlistEntity.ImageURL = imageLink;
+                        playlistEntity.SnapshotID = playlist.snapshot_id;
                     }
+
                     if (playlistsToAdd.Count == bufferSize)
                     {
                         _dataContext.Playlists.AddRange(playlistsToAdd);

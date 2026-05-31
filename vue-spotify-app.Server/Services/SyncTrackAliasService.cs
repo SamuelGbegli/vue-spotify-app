@@ -23,9 +23,11 @@ namespace vue_spotify_app.Server.Services
                     using(var scope = _scopeFactory.CreateScope())
                     {
                         var dataContext = scope.ServiceProvider.GetService<DataContext>();
-                        foreach(var track in dataContext.Tracks.Include(t => t.Artists))
+                        for (int i = 0; i < await dataContext.Tracks.CountAsync(); i += 100)
                         {
-                            track.GenerateMatchKey();
+                            var tracks =  dataContext.Tracks.Include(t => t.Artists).Skip(i).Take(100).ToList();
+                            foreach (var track in tracks)
+                                track.GenerateMatchKey();
                         }
                         await dataContext.SaveChangesAsync();
 

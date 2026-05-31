@@ -416,8 +416,6 @@ namespace vue_spotify_app.Server
             if (user == null || user.SpotifyToken == null) return;
             foreach (var track in await _dataContext.TrackRecords.Where(t => t.PlaylistID == null).ToListAsync())
             {
-
-
                 var isInLikedSongs = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/tracks/contains?ids={track.SpotifyID}");
                 if (isInLikedSongs.Length > 0 && !isInLikedSongs[0])
                 {
@@ -427,8 +425,8 @@ namespace vue_spotify_app.Server
                         _dataContext.TrackRecords.Remove(trackRecord);
                     }
                 }
-
             }
+
             int offset = 0;
 
             while (apiUrl != null && !cancellationToken.IsCancellationRequested)
@@ -440,6 +438,11 @@ namespace vue_spotify_app.Server
                 {
                     if (!item.track.is_local)
                     {
+                        if(await _dataContext.TrackRecords.CountAsync(r => r.UserId == user.SpotifyUserID && r.SpotifyID == item.track.id && r.PlaylistID == null) > 0)
+                        {
+                            await _dataContext.SaveChangesAsync(cancellationToken);
+                            return;
+                        }
                         var track = await AddOrUpdateTrack(item.track);
                         /*// Gets or creates artist entities for the track
                         var trackArtists = new List<Classes.Artist>();
@@ -629,16 +632,6 @@ namespace vue_spotify_app.Server
                     break;
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns the number of tracks in the user's Liked Songs library.
-        /// </summary>
-        /// <param name="trackQuery">A string all tracks must include to be returned.</param>
-        /// <returns>The number of tracks that match the srting provided.</returns>
-        public int GetNumberOfTracks(string trackQuery)
-        {
-            return _dataContext.Tracks.Count(t => t.Name.Contains(trackQuery) && _dataContext.TrackRecords.Any(r => r.SpotifyID == t.ID && r.PlaylistID == null));
         }
 
         /// <summary>
@@ -878,6 +871,24 @@ namespace vue_spotify_app.Server
             return trackEntity;
         }
 
+        /// <summary>
+        /// Function to update a track on Spotify with the latest information pulled via an API call.
+        /// </summary>
+        /// <param name="trackID">The ID of the track.</param>
+        public async Task SyncTrack(string trackID)
+        {
+            // Gets the first user from the database. This assumes the application is a single user application.
+            // If the application was expanded to include multiple users, this would likely pull an administrator account.
+            var user = await _dataContext.Users.FirstOrDefaultAsync();
+            // Makes an API call with the track ID.
+            var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
+            // If track exists, updates the track information in the database.
+            if (track != null)
+            {
+                await AddOrUpdateTrack(track);
+                await _dataContext.SaveChangesAsync();
+            }
+        }
     }
 }
 
