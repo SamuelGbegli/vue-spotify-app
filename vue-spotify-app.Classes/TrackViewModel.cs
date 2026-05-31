@@ -22,7 +22,7 @@ namespace vue_spotify_app.Classes
         /// <summary>
         /// A list of artists credited for the track.
         /// </summary>
-        public List<Artist> Artists { get; set; } = new List<Artist>();
+        public List<ArtistViewModel> Artists { get; set; } = new List<ArtistViewModel>();
         /// <summary>
         /// The internal Spotify URI for the track.
         /// </summary>

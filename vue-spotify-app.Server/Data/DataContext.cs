@@ -99,6 +99,26 @@ namespace vue_spotify_app.Server.Data
                                 })
                 ;
 
+            modelBuilder.Entity<TrackArtist>()
+                .ToTable("TrackArtists")
+                .HasKey(ta => ta.ID);
+
+            modelBuilder.Entity<TrackArtist>()
+                .HasIndex(ta => new { ta.TrackID, ta.ArtistID }).IsUnique();
+
+            modelBuilder.Entity<TrackArtist>()
+                .HasOne(ta => ta.Track)
+                .WithMany(t => t.TrackArtists)
+                .HasForeignKey(ta => ta.TrackID)
+                //.HasConstraintName("FK_TrackArtist_Tracks_TrackID")
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TrackArtist>()
+                .HasOne(ta => ta.Artist)
+                .WithMany(a => a.TrackArtists)
+                .HasForeignKey(ta => ta.ArtistID)
+                .OnDelete(DeleteBehavior.NoAction);
+
             modelBuilder.Entity<Artist>()
                 .ToTable("Artists")
                 .HasMany(a => a.Albums)

@@ -26,10 +26,19 @@ namespace vue_spotify_app.Classes
         /// A version of the track name used for sorting.
         /// </summary>
         public string SortName { get; set; } = string.Empty;
+
         /// <summary>
         /// A list of the artists credited for the track.
         /// </summary>
         public List<Artist> Artists { get; set; } = new List<Artist>();
+        /// <summary>
+        /// A list of mappings between the track and the artists credited for it.
+        /// </summary>
+        public List<TrackArtist> TrackArtists { get; set; }
+        /// <summary>
+        /// A version of the name of the lead artist credited for the track. Used for sorting prposes.
+        /// </summary>
+        public string ArtistSortName { get; set; } = string.Empty;
         /// <summary>
         /// The ID of the album the track belongs to.
         /// </summary>
@@ -38,6 +47,10 @@ namespace vue_spotify_app.Classes
         /// The album the track belongs to.
         /// </summary>
         public Album Album { get; set; }
+        /// <summary>
+        /// A version of the track's album name used for sorting.
+        /// </summary>
+        public string AlbumSortName { get; set; }
         /// <summary>
         /// Spotify's interal URI for the track.
         /// </summary>

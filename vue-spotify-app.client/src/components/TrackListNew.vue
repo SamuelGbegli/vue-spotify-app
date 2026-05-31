@@ -15,7 +15,7 @@
           </template>
         </QChip>
         <QChip v-if="route.query.sort != null" :label="`Sorted by ${generateFilterSortChip()}`" color="secondary" text-color="white" />
-        
+
         <QSpace />
         <QBtn label="Filter and sort tracks" color="primary" @click="openFilterAndSortDialog()" />
       </div>
@@ -287,10 +287,12 @@ import SortType from '@/enumClasses/sortType';
   });
 
   onBeforeMount(async () => {
+    //console.log("Section called");
     onRouteUpdate();
   })
 
   watch(route, async () => {
+    console.log("Section called");
     onRouteUpdate();
   })
 
@@ -361,7 +363,7 @@ import SortType from '@/enumClasses/sortType';
       trackBatches.value = updatedBatches;
       console.log(trackBatches.value);
      }
-     else{
+     else if (!trackBatches.value.map(x => x.batchIndex).includes(response.data.tracks[0].batchIndex)){
        const batch = new TrackViewModelBatch();
       batch.batchIndex = response.data.tracks[0].batchIndex;
       response.data.tracks[0].trackViewModels.forEach((x: any) => {
@@ -400,7 +402,7 @@ import SortType from '@/enumClasses/sortType';
         pageOffset.value = trackBatches.value.length > 0 ? Math.min(...trackBatches.value.map(x => x.batchIndex)) - 1 : 1;
         console.log(pageOffset.value);
         await getTracks(true);
-        if (trackBatches.value[0]?.batchIndex != 1) ref.scrollTo(currentIndex.value + trackBatches.value[0].trackViewModels.length, 0);
+        if (trackBatches.value[trackBatches.value.length - 1]?.batchIndex != Math.ceil(pagination.value.rowsNumber / trackLimit.value)) ref.scrollTo(currentIndex.value + trackBatches.value[trackBatches.value.length - 1].trackViewModels.length, 0);
       }
       if (nearBottom && Math.max(...trackBatches.value.map(x => x.batchIndex)) < Math.ceil(pagination.value.rowsNumber / trackLimit.value) && statusCode.value != null) {
         console.log("End of page reached", trackBatches.value);
@@ -443,7 +445,7 @@ import SortType from '@/enumClasses/sortType';
     filter.value.sortOrder = descending ? SortOrder.Descending : SortOrder.Ascending;
 
     await getTracks(false, false, trackBatches.value.map(x => x.batchIndex));
-    
+
     pagination.value.sortBy = sortBy;
     pagination.value.descending = descending;
   }
@@ -507,7 +509,7 @@ import SortType from '@/enumClasses/sortType';
     if(filter.value.searchName == filter.value.searchArtist && filter.value.searchArtist == filter.value.searchAlbum){
       return "(all)";
     }
-    
+
     let text = "";
 
     if(filter.value.searchName) text += " (name)";
@@ -540,7 +542,7 @@ import SortType from '@/enumClasses/sortType';
         break;
     }
     text += parseInt(route.query.order.toString()) == SortOrder.Ascending ? " (ascending)" : " (descending)";
-  
+
     return text;
   }
 

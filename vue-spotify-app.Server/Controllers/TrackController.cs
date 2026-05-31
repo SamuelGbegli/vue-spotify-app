@@ -102,7 +102,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _trackService.GetTracks(
+                var data = await _trackService.GetTracksNew(
                     spotifyUserID: user.SpotifyUserID,
                      playlistId: playlistId,
                      filter: filter,
@@ -112,8 +112,8 @@ namespace vue_spotify_app.Server.Controllers
                 stopwatch.Stop();
                 return Ok(new
                 {
-                    timeElapsed = stopwatch.ElapsedMilliseconds,
-                    totalTracks = data.Item1,
+                    timeElapsed = stopwatch.Elapsed,
+                    totalTracks =data.Item1,
                     tracks = data.Item2
                 });
             }
@@ -177,7 +177,7 @@ namespace vue_spotify_app.Server.Controllers
             // TODO: rewrite function to create and return CSV file
             try
             {
-
+                //var tracks = await _trackService.GetTracks();
                 return Ok();
             }
             catch (Exception ex)
