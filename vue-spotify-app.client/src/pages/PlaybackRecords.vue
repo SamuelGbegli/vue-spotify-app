@@ -132,10 +132,10 @@
           <QBtn flat dense icon="more_vert">
             <QMenu anchor="bottom left" self="top left">
                     <QList>
-                      <QItem clickable v-close-popup :to="`viewtrack/${props.row.spotifyID}`">
+                      <QItem clickable v-close-popup :to="`viewtrack/${props.row.id}`">
                         <QItemSection>View track</QItemSection>
                       </QItem>
-                      <QItem clickable v-close-popup @click="openQueueDialog(props.row.spotifyID, props.row.name)">
+                      <QItem clickable v-close-popup @click="openQueueDialog(props.row.id, props.row.name)">
                         <QItemSection>Add track to queue</QItemSection>
                       </QItem>
                     </QList>

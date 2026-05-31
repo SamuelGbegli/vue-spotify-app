@@ -78,16 +78,17 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("gettrackplaylists")]
-        public async Task<IActionResult> GetTrackPlaylists([FromHeader] string authToken, [FromQuery] string trackId, [FromQuery] int offset = 0, [FromQuery] int numberOfPlaylists = 10)
+        public async Task<IActionResult> GetTrackPlaylists([FromQuery] string trackId, [FromQuery] int offset = 0, [FromQuery] int numberOfPlaylists = 10)
         {
             try
             {
-                var totalPlaylists = await _playlistService.GetNumberOfTrackPlaylists(trackId);
-                var playlists = await _playlistService.GetPlaylistsPerTrack(trackId, authToken, offset, numberOfPlaylists);
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var data = await _playlistService.GetPlaylistsPerTrack(user, trackId, offset, numberOfPlaylists);
                 return Ok(new
                 {
-                    totalPlaylists,
-                    playlists
+                    totalPlaylists = data.Item1,
+                    playlists = data.Item2
                 });
             }
             catch (Exception ex)
