@@ -372,16 +372,16 @@ namespace vue_spotify_app.Server
                                           AlbumExternalURL = t.Album.ExternalURL,
                                           Length = t.Length,
                                           DateSaved = i.DateAdded,
-                                          Artists = _dataContext.Artists.Where(
-                                              a => t.TrackArtists
-                                                .Select(ta => ta.ArtistID)
-                                                .Contains(a.ID)
-                                              ).Select(a => new Classes.ArtistViewModel
+                                          Artists = t.Artists.Select(a =>
                                           {
-                                              ID = a.ID,
-                                              Name = a.Name,
-                                              ExternalURL = a.ExternalURL,
-                                              Index = t.TrackArtists.FirstOrDefault(ta => ta.ArtistID == a.ID).Index
+                                              var artistIDs = t.TrackArtists.OrderBy(ta => ta.Index).Select(ta => ta.ArtistID).ToList();
+                                              return new ArtistViewModel
+                                              {
+                                                  ID = a.ID,
+                                                  Name = a.Name,
+                                                  ExternalURL = a.ExternalURL,
+                                                  Index = artistIDs.IndexOf(a.ID)
+                                              };
                                           }).ToList(),
                                           DateLastPlayed = lastPlayed.FirstOrDefault(lp => lp.AliasID == i.AliasID)?.LastPlayed,
                                           IsInLikedSongs = liked != null
