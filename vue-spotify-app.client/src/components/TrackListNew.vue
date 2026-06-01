@@ -345,7 +345,7 @@ import SortType from '@/enumClasses/sortType';
       query.append("sortType", filter.value.sortType.toString());
       query.append("sortOrder", filter.value.sortOrder.toString());
 
-      const response = await axios.get(`track/gettracks?${query.toString()}`);
+      const response = await axios.get(`/api/track/gettracks?${query.toString()}`);
 
       numberOftracks.value = response.data.totalTracks
       pagination.value.rowsNumber = response.data.totalTracks;

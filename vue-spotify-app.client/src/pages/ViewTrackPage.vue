@@ -245,7 +245,7 @@ watch(
 async function getTrackInformation() {
   track.value = null;
   try{
-    const response = await axios.get(`/track/gettrack/${id.value}`, {
+    const response = await axios.get(`/api/track/gettrack/${id.value}`, {
       headers: {
         authToken: authStore.accessToken
       }
@@ -263,7 +263,7 @@ async function getTrackInformation() {
 async function getTrackPlaybackRecords() {
   recordsStatusCode.value = null;
   try{
-    const response = await axios.get(`playbackrecord/getrecordspertrack?trackId=${id.value}&offset=${1}&numberOfRecords=${20}`,
+    const response = await axios.get(`/api/playbackrecord/getrecordspertrack?trackId=${id.value}&offset=${1}&numberOfRecords=${20}`,
       {
       headers: { "Content-Type": "application/json", "Accept": "application/json"}
     }
@@ -284,7 +284,7 @@ async function getTrackPlaybackRecords() {
   async function getTrackPlaylists() {
     playlistStatusCode.value = null;
     try{
-      const response = await axios.get(`playlist/gettrackplaylists?trackId=${id.value}&offset=${(playlistPagination.value.page - 1) * 20}&numberOfPlaylists=${20}`,
+      const response = await axios.get(`/api/playlist/gettrackplaylists?trackId=${id.value}&offset=${(playlistPagination.value.page - 1) * 20}&numberOfPlaylists=${20}`,
         {
           headers: { authToken: authStore.accessToken }
         }

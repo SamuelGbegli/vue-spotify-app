@@ -389,6 +389,8 @@ namespace vue_spotify_app.Server
 
 
                 batch.TrackViewModels = trackViewModels.ToList();
+                foreach (var trackViewModel in batch.TrackViewModels)
+                    trackViewModel.Artists = trackViewModel.Artists.OrderBy(ta => ta.Index).ToList();
                 batches.Add(batch);
             }
 

@@ -59,7 +59,7 @@ async function getPlayedTracks() {
 
 async function testPlaybackHistoryBackend(){
   try{
-    const response = await axios.get(`track/testplaybackhistory`,{
+    const response = await axios.get(`/api/track/testplaybackhistory`,{
       headers: { authToken: authStore.accessToken },
     })
     console.log(response.status)

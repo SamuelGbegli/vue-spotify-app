@@ -403,7 +403,7 @@ namespace vue_spotify_app.Server
                 select new
                 {
                     AliasID = g.Key,
-                    Count = g.Count(),
+                    Count = g.Count()                   
                 };
 
             var totalRecords = await groupedQuery.CountAsync();
@@ -419,6 +419,7 @@ namespace vue_spotify_app.Server
             var tracks = await _dataContext.Tracks
                 .Where(t => aliasIDs.Contains(t.AliasID) && !string.IsNullOrWhiteSpace(t.Name))
                 .Include(t => t.Artists)
+                .Include(t => t.TrackArtists)
                 .Include(t => t.Album)
                     .ThenInclude(a => a.AlbumCover)
                 .ToListAsync();
@@ -439,8 +440,9 @@ namespace vue_spotify_app.Server
                         AlbumCover = track.Album.AlbumCover.Link,
                         NumberOfFoundRecords = g.Count
                     };
-                    foreach (var artist in track.Artists)
+                    foreach (var trackArtist in track.TrackArtists.OrderBy(ta => ta.Index))
                     {
+                        var artist = _dataContext.Artists.Find(trackArtist.ArtistID);
                         viewModel.Artists.Add(new Classes.ArtistViewModel
                         {
                             ID = artist.ID,

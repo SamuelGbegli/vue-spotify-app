@@ -9,7 +9,7 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class PlaybackRecordController : ControllerBase
     {
 

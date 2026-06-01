@@ -326,7 +326,7 @@
       Loading.show({
         message: "Updating records..."
       });
-      await axios.get("playbackrecord/updaterecords", {
+      await axios.get("/api/playbackrecord/updaterecords", {
         headers: {
           authToken: authStore.accessToken
         }
@@ -354,7 +354,7 @@
 
     try {
       const response = await axios.get(
-        `playbackrecord/getrecords?${searchParams}`,
+        `/api/playbackrecord/getrecords?${searchParams}`,
       );
       console.log(response.data);
       playbackRecords.value = [];
@@ -395,7 +395,7 @@
 
 
     try {
-      const response = await axios.get(`playbackrecord/getTrackFoundRecords?${searchParams}`, {
+      const response = await axios.get(`/api/playbackrecord/getTrackFoundRecords?${searchParams}`, {
         headers: {
           authToken: authStore.accessToken
         }

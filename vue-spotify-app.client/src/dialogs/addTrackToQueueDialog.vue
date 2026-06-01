@@ -61,7 +61,7 @@ onBeforeMount( async () => {
   async function getAvailableDevices() {
     try{
 
-    const response = await axios.get("playbackqueue/getdevices");
+    const response = await axios.get("/api/playbackqueue/getdevices");
     availableDevices.value = response.data as DeviceInfo[];
     selectedDevice.value = availableDevices.value.length > 0 ? availableDevices.value[0] : null;
     deviceStatusCode.value = response.status;
@@ -82,7 +82,7 @@ const {dialogRef, onDialogOK, onDialogCancel} = useDialogPluginComponent();
 function onOK(){
   try{
     axios.post(
-      `playbackqueue/addtoqueue`,
+      `/api/playbackqueue/addtoqueue`,
       {
         spotifyTrackId: props.trackId,
         deviceId: selectedDevice.value?.id

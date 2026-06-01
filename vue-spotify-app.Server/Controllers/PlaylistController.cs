@@ -7,7 +7,7 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class PlaylistController : ControllerBase
     {
         private readonly PlaylistService _playlistService;
@@ -21,7 +21,7 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("getplaylists")]
-        public async Task<IActionResult> GetPlaylists([FromHeader] string authToken, int offset = 0, int numberOfPlaylists = 0)
+        public async Task<IActionResult> GetPlaylists([FromQuery]int offset = 0, [FromQuery]int numberOfPlaylists = 0)
         {
             try
             {

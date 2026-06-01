@@ -12,7 +12,7 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class TrackController : ControllerBase
     {
         private readonly TrackService _trackService;
@@ -155,7 +155,7 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("gettrack/{id}")]
-        public async Task<IActionResult> GetTrack([FromHeader] string authToken, [FromRoute] string id)
+        public async Task<IActionResult> GetTrack([FromRoute] string id)
         {
             try
             {

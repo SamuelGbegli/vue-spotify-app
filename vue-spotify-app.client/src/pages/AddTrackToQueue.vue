@@ -56,7 +56,7 @@
 
   async function getAvailableDevices() {
     try {
-      const response = await axios.get("/playbackqueue/getdevices");
+      const response = await axios.get("/api/playbackqueue/getdevices");
       availableDevices.value = response.data as DeviceInfo[];
       selectedDevice.value = availableDevices.value.length > 0 ? availableDevices.value[0] : null;
     }
@@ -69,7 +69,7 @@
 
   async function addToQueue() {
     try {
-      const response = await axios.post("/playbackqueue/addtoqueue", {
+      const response = await axios.post("/api/playbackqueue/addtoqueue", {
         spotifyTrackId: trackId.value,
         deviceId: selectedDevice.value?.id
       });
