@@ -12,6 +12,14 @@ namespace vue_spotify_app.Classes
     public class SearchDTO
     {
         /// <summary>
+        /// Contains the selected fields to search for. An empty field is equivalent to searching for all fields.
+        /// </summary>
+        public List<string> ItemTypes { get; set; } = new List<string>();
+        /// <summary>
+        /// A generic text field that is applied to all possible fields.
+        /// </summary>
+        public string Query { get; set; } = string.Empty;
+        /// <summary>
         /// Filter for a track's album name.
         /// </summary>
         public string Album { get; set; } = string.Empty;
@@ -44,9 +52,13 @@ namespace vue_spotify_app.Classes
         public string UPC { get; set; } = string.Empty;
 
         /// <summary>
-        /// Filter for one of two album values, "new" or "hipster".
+        /// If true, returns albums released in the last 2 weeks.
         /// </summary>
-        public string Tag { get; set; } = string.Empty;
+        public bool NewAlbums { get; set; }
+        /// <summary>
+        /// If true, only returns albums with the lowest 10% popularity
+        /// </summary>
+        public bool HipsterAlbums { get; set; }
 
         public int Offset { get; set; }
     }
