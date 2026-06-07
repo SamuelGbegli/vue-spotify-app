@@ -56,7 +56,7 @@ async function getTrackInformation() {
 
   async function testPostRequest() {
     try {
-      const response = await axios.post("track/testpost", track.value)
+      const response = await axios.post("/api/track/testpost", track.value)
       console.log(response.data)
       alert(`Successfully made post request with track ${track.value?.name}.`)
     }
@@ -67,7 +67,7 @@ async function getTrackInformation() {
 
   async function testGetRequest() {
     try {
-      const response = await axios.get(`track/makecalltoapi?authtoken=${authStore.accessToken}&trackId=${inputtedId.value}`)
+      const response = await axios.get(`/api/track/makecalltoapi?authtoken=${authStore.accessToken}&trackId=${inputtedId.value}`)
       console.log(response.data)
       alert("Successfully made get request.")
     }

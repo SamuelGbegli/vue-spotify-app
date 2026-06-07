@@ -67,7 +67,7 @@
   async function getPlaylist() {
     try {
       console.log(route.params.id)
-      const response = await axios.get(`playlist/getplaylist/${route.params.id}`,
+      const response = await axios.get(`/api/playlist/getplaylist/${route.params.id}`,
         {
           headers: { authToken: authStore.accessToken }
         }
@@ -88,7 +88,7 @@
     trackStatusCode.value = null;
 
     try {
-      const response = await axios.get(`playlist/getplaylisttracks/${route.params.id}?offset=${(pageOffset.value - 1) * trackLimit.value}&numberOfTracks=${trackLimit.value}&trackQuery=${trackQuery.value}`,
+      const response = await axios.get(`/api/playlist/getplaylisttracks/${route.params.id}?offset=${(pageOffset.value - 1) * trackLimit.value}&numberOfTracks=${trackLimit.value}&trackQuery=${trackQuery.value}`,
         {
           headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
         })

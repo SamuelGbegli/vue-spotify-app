@@ -12,7 +12,7 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class TrackController : ControllerBase
     {
         private readonly TrackService _trackService;
@@ -71,6 +71,7 @@ namespace vue_spotify_app.Server.Controllers
         [Route("gettracks")]
         [Authorize]
         public async Task<IActionResult> GetTracks(
+            [FromQuery] List<int> offset,
             [FromQuery] string? playlistId = null,
             [FromQuery] string query = "",
             [FromQuery] bool searchName = true,
@@ -80,10 +81,9 @@ namespace vue_spotify_app.Server.Controllers
             [FromQuery] DateTime? dateRangeTo = null,
             [FromQuery] SortType sortType = SortType.Name,
             [FromQuery] Classes.SortOrder sortOrder = Classes.SortOrder.Ascending,
-            [FromQuery] int offset = 0,
             [FromQuery] int numberOfTracks = 10)
         {
-                var stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
             try
             {
@@ -98,8 +98,7 @@ namespace vue_spotify_app.Server.Controllers
                     SortType = sortType,
                     SortOrder = sortOrder
                 };
-                // var tracks = await _trackService.GetTracks(trackQuery: trackQuery, offset: offset, numberOfTracks: numberOfTracks);
-                
+
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
@@ -107,12 +106,13 @@ namespace vue_spotify_app.Server.Controllers
                     spotifyUserID: user.SpotifyUserID,
                      playlistId: playlistId,
                      filter: filter,
-                     offset: offset,
+                     offsets: offset,
                      numberOfTracks: numberOfTracks);
+
                 stopwatch.Stop();
                 return Ok(new
                 {
-                    timeElapsed = stopwatch.ElapsedMilliseconds,
+                    timeElapsed = stopwatch.Elapsed,
                     totalTracks =data.Item1,
                     tracks = data.Item2
                 });
@@ -149,13 +149,13 @@ namespace vue_spotify_app.Server.Controllers
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                  return StatusCode(500, ex.Message);
+                return StatusCode(500, ex.Message);
             }
         }
 
         [HttpGet]
         [Route("gettrack/{id}")]
-        public async Task<IActionResult> GetTrack([FromHeader] string authToken, [FromRoute] string id)
+        public async Task<IActionResult> GetTrack([FromRoute] string id)
         {
             try
             {
@@ -177,8 +177,8 @@ namespace vue_spotify_app.Server.Controllers
             // TODO: rewrite function to create and return CSV file
             try
             {
-                var tracks = await _trackService.GetTracks();
-                return Ok(tracks);
+                //var tracks = await _trackService.GetTracks();
+                return Ok();
             }
             catch (Exception ex)
             {

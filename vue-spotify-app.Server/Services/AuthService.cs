@@ -155,7 +155,7 @@ namespace vue_spotify_app.Server
                     throw new Exception($"Error fetching user data: {content}");
 
                 content = await response.Content.ReadAsStringAsync();
-                var spotifyUser = JsonSerializer.Deserialize<UserProfile>(content);
+                var spotifyUser = JsonSerializer.Deserialize<Classes.APIData.UserProfile>(content);
 
                 var user = await _dataContext.Users.Include(u => u.SpotifyToken).FirstOrDefaultAsync(u => u.SpotifyUserID == spotifyUser.id);
                 if (user == null)
@@ -195,6 +195,32 @@ namespace vue_spotify_app.Server
             await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
+        public async Task<Classes.UserProfile> GetUserProfile(string userId)
+        {
+                var token = await _dataContext.SpotifyTokens.FindAsync(Guid.Parse(userId));
+                if (token == null)
+                    throw new Exception("No token found for user.");
+    
+                var request = new HttpRequestMessage(HttpMethod.Get, "https://api.spotify.com/v1/me");
+    
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+    
+                var response = await _httpClient.SendAsync(request);
+    
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Error fetching user data: {content}");
+
+            var spotifyUser = JsonSerializer.Deserialize<Classes.APIData.UserProfile>(content);
+
+            var userProfile = new Classes.UserProfile
+            {
+                SpotifyID = spotifyUser.id,
+                DisplayName = spotifyUser.display_name,
+                ProfileImageLink = spotifyUser.images.FirstOrDefault()?.url
+            };
+            return userProfile;
+        }
         public async Task RefreshToken(SpotifyToken token)
         {
             var data = new Dictionary<string, string>

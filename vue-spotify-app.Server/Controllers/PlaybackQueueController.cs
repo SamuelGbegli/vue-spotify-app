@@ -7,7 +7,7 @@ using vue_spotify_app.Server.Services;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class PlaybackQueueController: ControllerBase
     {
         private readonly PlaybackQueueService _playbackQueueService;

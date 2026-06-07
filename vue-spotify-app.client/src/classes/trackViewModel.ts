@@ -1,11 +1,12 @@
 import Artist from "./artist";
+import ArtistViewModel from "./artistViewModel";
 
 export default class TrackViewModel {
   id: string;
   name: string;
   uri: string;
   externalUrl: string;
-  artists: Artist[] = [];
+  artists: ArtistViewModel[] = [];
   albumName: string;
   albumCover: string;
   albumUri: string;
@@ -23,11 +24,12 @@ export default class TrackViewModel {
     this.uri = data.uri;
     this.externalUrl = data.externalURL;
     data.artists.forEach((artistData: any) => {
-      const artist = new Artist();
+      const artist = new ArtistViewModel();
       artist.id = artistData.id;
       artist.name = artistData.name;
-      artist.uri = artistData.uri;
+      artist.uri = artistData.URI;
       artist.externalUrl = artistData.externalURL;
+      artist.index = artistData.index;
       this.artists.push(artist);
     });
     this.albumName = data.albumName;
@@ -39,5 +41,7 @@ export default class TrackViewModel {
     this.dateLastPlayed = data.dateLastPlayed? new Date(data.dateLastPlayed) : null;
     this.numberOfFoundRecords = data.numberOfFoundRecords;
     this.isInLikedSongs = data.isInLikedSongs;
+
+    //this.artists.sort((a, b) => a.index - b.index);
   }
 }

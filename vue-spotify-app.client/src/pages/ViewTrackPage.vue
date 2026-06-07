@@ -24,7 +24,7 @@
 <div class="row q-gutter-md">
   <div class="col relative-position">
     <h5>Playlists containing this track</h5>
-    <div v-if="playlistStatusCode === 200 || playlistStatusCode == null" class="q-gutter-sm">
+    <!--<div v-if="playlistStatusCode === 200 || playlistStatusCode == null" class="q-gutter-sm">
     <h6>Total playlists: {{ totalPlaylists }}</h6>
       <QMarkupTable v-if="listOfPlaylists.length > 0">
         <thead>
@@ -56,11 +56,55 @@
       <div class="row items-center justify-center" style="height: 200px;">
         <q-spinner-dots size="50px" color="green" />
       </div>
-    </QInnerLoading>
+    </QInnerLoading>-->
+    <QTable
+      :columns="playlistColumns"
+      :rows="listOfPlaylists"
+      row-key="playlistID"
+      wrap-cells
+      :loading="playlistStatusCode === null"
+      no-results-label="No playlists found containing this track."
+      v-model:pagination="playlistPagination"
+      hide-pagination>
+      <template v-slot:top>
+        <div class="text-h6">Total playlists: {{ totalPlaylists }}</div>
+      </template>
+        <template v-slot:body-cell-image="props">
+          <q-td :props="props">
+            <QImg :src="props.row.image" :alt="`Playlist cover for ${props.row.playlistName}`" width="50px"/>
+          </q-td>
+        </template>
+        <template v-slot:body-cell-name="props">
+          <q-td :props="props">
+            <span>{{ props.row.playlistName }}</span>
+          </q-td>
+        </template>
+        <template v-slot:body-cell-dateAdded="props">
+          <q-td :props="props">
+            {{ date.formatDate(props.row.dateAdded, "Do MMM YYYY HH:mm") }}
+          </q-td>
+        </template>
+        <template v-slot:body-cell-view="props">
+          <q-td :props="props">
+            <QBtn size="sm" color="secondary" label="view" :to="`/playlists/${props.row.playlistID}`" />
+          </q-td>
+        </template>
+        <template v-slot:bottom>
+            <QSpace />
+            <QPagination v-model="playlistPagination.page"
+                        :max="Math.ceil(playlistPagination.rowsNumber / playlistPagination.rowsPerPage)"
+                        size="sm"
+                        @update:model-value="getTrackPlaylists()"
+                        input />
+          </template>
+          <template v-slot:loading>
+            <QInnerLoading showing size="50px" color="green" />
+          </template>
+      </QTable>
   </div>
   <div class="col relative-position">
     <h5>Playback records</h5>
-    <div v-if="recordsStatusCode === 200 || recordsStatusCode == null" class="q-gutter-sm">
+    <!--<div v-if="recordsStatusCode === 200 || recordsStatusCode == null" class="q-gutter-sm">
       <h6>Total records: {{ totalRecords }}</h6>
       <QMarkupTable v-if="listOfRecords.length > 0">
         <thead>
@@ -82,7 +126,36 @@
       <div class="row items-center justify-center" style="height: 200px;">
         <q-spinner-dots size="50px" color="green" />
       </div>
-    </QInnerLoading>
+    </QInnerLoading>-->
+    <QTable
+      :columns="recordsColumns"
+      :rows="listOfRecords"
+      row-key="datePlayed"
+      wrap-cells
+      :loading="recordsStatusCode === null"
+      no-results-label="No playback records found."
+      v-model:pagination="recordsPagination"
+      hide-pagination>
+      <template v-slot:top>
+        <div class="text-h6">Total records: {{ totalRecords }}</div>
+      </template>
+      <template v-slot:body-cell-datePlayed="props">
+        <q-td :props="props">
+          {{ date.formatDate(props.row, "Do MMM YYYY HH:mm") }}
+        </q-td>
+      </template>
+      <template v-slot:bottom>
+        <QSpace />
+        <QPagination v-model="recordsPagination.page"
+                     :max="Math.ceil(recordsPagination.rowsNumber / recordsPagination.rowsPerPage)"
+                     size="sm"
+                     @update:model-value="getTrackPlaybackRecords()"
+                     input />
+      </template>
+      <template v-slot:loading>
+        <QInnerLoading showing size="50px" color="green" />
+      </template>
+    </QTable>
 </div>
 </div>
 </div>
@@ -115,6 +188,49 @@ const playlistStatusCode = ref<number | null>(null)
 
 const id = ref(route.params.id);
 
+const playlistColumns = [
+  {
+    name: "image",
+    label: "",
+    field: "image",
+  },
+  {
+    name: "name",
+    label: "Name",
+    field: "name"
+  },
+  {
+    name: "dateAdded",
+    label: "Date added to playlist",
+    field: "dateAdded"
+  },
+  {
+    name: "view",
+    label: "",
+    field: "playlistID"
+  }
+];
+
+const recordsColumns = [
+  {
+    name: "datePlayed",
+    label: "Date played",
+    field: "datePlayed"
+  }
+];
+
+const playlistPagination = ref({
+  page: 1,
+  rowsPerPage: 20,
+  rowsNumber: totalPlaylists.value
+})
+
+const recordsPagination = ref({
+  page: 1,
+  rowsPerPage: 20,
+  rowsNumber: totalRecords.value
+});
+
 watch(
   route,
   async () => {
@@ -129,7 +245,7 @@ watch(
 async function getTrackInformation() {
   track.value = null;
   try{
-    const response = await axios.get(`/track/gettrack/${id.value}`, {
+    const response = await axios.get(`/api/track/gettrack/${id.value}`, {
       headers: {
         authToken: authStore.accessToken
       }
@@ -147,13 +263,14 @@ async function getTrackInformation() {
 async function getTrackPlaybackRecords() {
   recordsStatusCode.value = null;
   try{
-    const response = await axios.get(`playbackrecord/getrecordspertrack?trackId=${id.value}&offset=${1}&numberOfRecords=${20}`,
+    const response = await axios.get(`/api/playbackrecord/getrecordspertrack?trackId=${id.value}&offset=${1}&numberOfRecords=${20}`,
       {
       headers: { "Content-Type": "application/json", "Accept": "application/json"}
     }
     );
     listOfRecords.value = response.data.records;
     totalRecords.value = response.data.totalRecords;
+    recordsPagination.value.rowsNumber = response.data.totalRecords;
     recordsStatusCode.value = response.status;
     console.log(response)
   }
@@ -167,7 +284,7 @@ async function getTrackPlaybackRecords() {
   async function getTrackPlaylists() {
     playlistStatusCode.value = null;
     try{
-      const response = await axios.get(`playlist/gettrackplaylists?trackId=${id.value}&offset=${(playlistPage.value - 1) * 20}&numberOfPlaylists=${20}`,
+      const response = await axios.get(`/api/playlist/gettrackplaylists?trackId=${id.value}&offset=${(playlistPagination.value.page - 1) * 20}&numberOfPlaylists=${20}`,
         {
           headers: { authToken: authStore.accessToken }
         }
@@ -177,6 +294,7 @@ async function getTrackPlaybackRecords() {
         listOfPlaylists.value.push(i as TrackPlaylistViewModel);
       })
       totalPlaylists.value = response.data.totalPlaylists;
+      playlistPagination.value.rowsNumber = response.data.totalPlaylists;
       playlistStatusCode.value = response.status;
       console.log(response)
     }

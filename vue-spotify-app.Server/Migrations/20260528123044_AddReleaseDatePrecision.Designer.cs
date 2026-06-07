@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using vue_spotify_app.Server.Data;
 
@@ -11,9 +12,11 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20260528123044_AddReleaseDatePrecision")]
+    partial class AddReleaseDatePrecision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -264,10 +267,6 @@ namespace vue_spotify_app.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SnapshotID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SortName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -286,16 +285,8 @@ namespace vue_spotify_app.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("AlbumSortName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid?>("AliasID")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ArtistSortName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Explicit")
                         .HasColumnType("bit");
@@ -351,33 +342,6 @@ namespace vue_spotify_app.Server.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("TrackAliases", (string)null);
-                });
-
-            modelBuilder.Entity("vue_spotify_app.Classes.TrackArtist", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ArtistID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Index")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TrackID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("ArtistID");
-
-                    b.HasIndex("TrackID", "ArtistID")
-                        .IsUnique();
-
-                    b.ToTable("TrackArtists", (string)null);
                 });
 
             modelBuilder.Entity("vue_spotify_app.Classes.TrackRecord", b =>
@@ -497,40 +461,11 @@ namespace vue_spotify_app.Server.Migrations
                     b.Navigation("Alias");
                 });
 
-            modelBuilder.Entity("vue_spotify_app.Classes.TrackArtist", b =>
-                {
-                    b.HasOne("vue_spotify_app.Classes.Artist", "Artist")
-                        .WithMany("TrackArtists")
-                        .HasForeignKey("ArtistID")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("vue_spotify_app.Classes.Track", "Track")
-                        .WithMany("TrackArtists")
-                        .HasForeignKey("TrackID")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Artist");
-
-                    b.Navigation("Track");
-                });
-
             modelBuilder.Entity("vue_spotify_app.Classes.Album", b =>
                 {
                     b.Navigation("AlbumCover");
 
                     b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("vue_spotify_app.Classes.Artist", b =>
-                {
-                    b.Navigation("TrackArtists");
-                });
-
-            modelBuilder.Entity("vue_spotify_app.Classes.Track", b =>
-                {
-                    b.Navigation("TrackArtists");
                 });
 
             modelBuilder.Entity("vue_spotify_app.Classes.TrackAlias", b =>

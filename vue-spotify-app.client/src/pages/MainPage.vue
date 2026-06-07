@@ -3,7 +3,6 @@
 <template>
   <div class="q-ma-sm  q-gutter-sm">
     <div class="text-h3">Liked tracks</div>
-<TrackList/>
 <TrackListNew/>
   </div>
 </template>

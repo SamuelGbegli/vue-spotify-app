@@ -23,7 +23,7 @@ namespace vue_spotify_app.Classes
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// A version of the track name used for sorting.
+        /// A version of the artist's name used for sorting.
         /// </summary>
         public string SortName { get; set; }
         /// <summary>
@@ -34,6 +34,10 @@ namespace vue_spotify_app.Classes
         /// An external link to the artist's Spotify profile.
         /// </summary>
         public string ExternalURL { get; set; }
+        /// <summary>
+        /// A list of mappings between tracks and the artist.
+        /// </summary>
+        public List<TrackArtist> TrackArtists { get; set; }
 
         public List<Track> Tracks { get; set; }
 

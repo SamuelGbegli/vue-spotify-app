@@ -207,7 +207,7 @@
       query.append("sortType", filter.value.sortType.toString());
       query.append("sortOrder", filter.value.sortOrder.toString());
 
-      const response = await axios.get(`track/gettracks?${query.toString()}`)
+      const response = await axios.get(`/api/track/gettracks?${query.toString()}`)
       console.log(response.data)
       trackViewModels.value = []
       numberOftracks.value = response.data.totalTracks
@@ -251,7 +251,7 @@
       message: 'Initialising backend database...',
     })
     try {
-      const response = await axios.get("track/initialisetracks",
+      const response = await axios.get("/api/track/initialisetracks",
         {
           headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
         })

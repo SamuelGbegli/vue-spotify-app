@@ -132,10 +132,10 @@
           <QBtn flat dense icon="more_vert">
             <QMenu anchor="bottom left" self="top left">
                     <QList>
-                      <QItem clickable v-close-popup :to="`viewtrack/${props.row.spotifyID}`">
+                      <QItem clickable v-close-popup :to="`viewtrack/${props.row.id}`">
                         <QItemSection>View track</QItemSection>
                       </QItem>
-                      <QItem clickable v-close-popup @click="openQueueDialog(props.row.spotifyID, props.row.name)">
+                      <QItem clickable v-close-popup @click="openQueueDialog(props.row.id, props.row.name)">
                         <QItemSection>Add track to queue</QItemSection>
                       </QItem>
                     </QList>
@@ -326,7 +326,7 @@
       Loading.show({
         message: "Updating records..."
       });
-      await axios.get("playbackrecord/updaterecords", {
+      await axios.get("/api/playbackrecord/updaterecords", {
         headers: {
           authToken: authStore.accessToken
         }
@@ -354,8 +354,9 @@
 
     try {
       const response = await axios.get(
-        `playbackrecord/getrecords?${searchParams}`,
+        `/api/playbackrecord/getrecords?${searchParams}`,
       );
+      console.log(response.data);
       playbackRecords.value = [];
       response.data.records.forEach(element => {
         const viewModel = new PlaybackRecordViewModel();
@@ -394,7 +395,7 @@
 
 
     try {
-      const response = await axios.get(`playbackrecord/getTrackFoundRecords?${searchParams}`, {
+      const response = await axios.get(`/api/playbackrecord/getTrackFoundRecords?${searchParams}`, {
         headers: {
           authToken: authStore.accessToken
         }

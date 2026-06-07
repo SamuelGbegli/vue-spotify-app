@@ -9,13 +9,12 @@ import PlaylistPage from '@/pages/PlaylistPage.vue'
 import ReviewPendingPlaybackRecords from '@/pages/ReviewPendingPlaybackRecords.vue'
 import SearchPage from '@/pages/SearchPage.vue'
 import SearchTracks from '@/pages/SearchTracks.vue'
-import TestNewTrackObject from '@/pages/TestNewTrackObject.vue'
 import ViewPlaylistPage from '@/pages/ViewPlaylistPage.vue'
 import ViewTrackPage from '@/pages/ViewTrackPage.vue'
-import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',

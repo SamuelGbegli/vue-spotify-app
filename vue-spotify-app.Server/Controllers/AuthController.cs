@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
@@ -38,20 +38,19 @@ namespace vue_spotify_app.Server.Controllers
         [HttpGet]
         [Authorize]
         [Route("me")]
-        public IActionResult GetMe()
+        public async Task<IActionResult> GetMe()
         {
             try
             {
-                return Ok(new
-                {
-                    userID = User.Claims.FirstOrDefault(c => c.Type == "spotify_id")?.Value,
-                });
+                var userProfile = await _authService.GetUserProfile(User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value);
+                return Ok(userProfile);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
             }
         }
+                    
 
         [HttpGet]
         [Authorize]
