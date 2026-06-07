@@ -201,7 +201,7 @@ const selectedItemTypes = ref<{label: string, value: string}[]>([]);
       }
     });
 
-    console.log(response);
+    console.log(response.data);
     statusCode.value = response.status;
     }
     catch(error){
