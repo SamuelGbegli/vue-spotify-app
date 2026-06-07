@@ -50,9 +50,9 @@ import TrackViewModel from '@/classes/trackViewModel';
 
     const authStore = useAuthStore()
 
-  const playlistID = ref("")
-  const trackQuery = ref("")
-  const foundTracks = ref<TrackViewModel[]>([])
+  const playlistID = ref("");
+  const trackQuery = ref("");
+  const foundTracks = ref<TrackViewModel[]>([]);
 
   async function searchForTrack(){
     foundTracks.value = []

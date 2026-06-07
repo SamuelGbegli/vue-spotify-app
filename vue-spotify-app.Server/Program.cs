@@ -36,11 +36,12 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SpotifyAPIWrapper>();
 builder.Services.AddScoped<PlaybackQueueService>();
 builder.Services.AddScoped<TrackAliasService>();
+builder.Services.AddScoped<SearchService>();
 
 builder.Services.AddHostedService<SyncPlaybackRecordService>();
 builder.Services.AddHostedService<SyncLikedSongsLibraryService>();
 builder.Services.AddHostedService<SyncTracksWithPlaybackHistoryService>();
-builder.Services.AddHostedService<SyncPlaylistService>();
+//builder.Services.AddHostedService<SyncPlaylistService>();
 builder.Services.AddHostedService<SyncTrackAliasService>();
 builder.Services.AddHostedService<SyncTracksService>();
 

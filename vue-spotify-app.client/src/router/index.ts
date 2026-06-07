@@ -7,6 +7,7 @@ import NotFound from '@/pages/NotFound.vue'
 import PlaybackRecords from '@/pages/PlaybackRecords.vue'
 import PlaylistPage from '@/pages/PlaylistPage.vue'
 import ReviewPendingPlaybackRecords from '@/pages/ReviewPendingPlaybackRecords.vue'
+import SearchPage from '@/pages/SearchPage.vue'
 import SearchTracks from '@/pages/SearchTracks.vue'
 import ViewPlaylistPage from '@/pages/ViewPlaylistPage.vue'
 import ViewTrackPage from '@/pages/ViewTrackPage.vue'
@@ -64,9 +65,9 @@ const router = createRouter({
       component: ViewTrackPage
     },
     {
-  path: '/test123',
-  component: GetTotalSavedTracks
-},
+      path: "/search",
+      component: SearchPage
+    },
     {
       path: '/:pathMatch(.*)*',
       component: NotFound,
