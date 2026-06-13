@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class PlaylistController : ControllerBase
     {
         private readonly PlaylistService _playlistService;
@@ -29,7 +31,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists, getUserPlaylistsOnly);
+                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists);
 
                 return Ok(new
                 {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using vue_spotify_app.Classes;
 using vue_spotify_app.Server.Data;
@@ -8,6 +9,7 @@ namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class PlaybackQueueController: ControllerBase
     {
         private readonly PlaybackQueueService _playbackQueueService;

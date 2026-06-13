@@ -52,10 +52,13 @@ namespace vue_spotify_app.Server.Services
                 };
                 foreach (var artist in item.artists)
                 {
-                    trackViewModel.Artists.Add(new Classes.Artist
+                    trackViewModel.Artists.Add(new Classes.ArtistViewModel
                     {
+                        ID = artist.id,
                         Name = artist.name,
+                        URI = artist.uri,
                         ExternalURL = artist.external_urls.spotify,
+                        Index = item.artists.IndexOf(artist)
                     });
                 }
                 tracks.Add(trackViewModel);

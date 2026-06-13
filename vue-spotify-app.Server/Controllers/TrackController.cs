@@ -13,6 +13,7 @@ namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class TrackController : ControllerBase
     {
         private readonly TrackService _trackService;

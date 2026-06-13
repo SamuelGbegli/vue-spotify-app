@@ -8,30 +8,46 @@ namespace vue_spotify_app.Server.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+
         public AuthController(AuthService authService)
         {
             _authService = authService;
         }
+
         [HttpGet("redirect")]
+        [AllowAnonymous]
         public IActionResult GetRedirectURL()
         {
+            if(User.Identity.IsAuthenticated)
+            {
+                return BadRequest("User is already authenticated.");
+            }
+
             var redirectURL = _authService.GenerateRedirectURL(out string state, out string codeVerifier);
             return Ok(redirectURL);
         }
 
         [HttpGet("callback")]
+        [AllowAnonymous]
         public async Task<IActionResult> Callback([FromQuery] string code, [FromQuery] string state)
         {
+            if (User.Identity.IsAuthenticated)
+            {
+                return BadRequest("User is already authenticated.");
+            }
+
             if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
             {
                 return BadRequest("Missing code or state.");
             }
+
             bool getToken = false;
             var token = await _authService.GetToken(code, state, getToken);
             if (token == null && getToken)
             {
                 return BadRequest("Failed to exchange code for token.");
             }
+
             return Ok();
         }
 
