@@ -46,21 +46,21 @@
     <template v-slot:body-cell-name="props">
       <QTd :props="props">
         <div>
-          <a :href="props.row.externalUrl">{{ props.row.name }}</a>
+          <a :href="props.row.externalURL">{{ props.row.name }}</a>
         </div>
       </QTd>
     </template>
     <template v-slot:body-cell-artists="props">
       <QTd :props="props">
         <div class="text-left">
-          <span v-for="x in props.row.artists" :key="x.id" :href="x.externalUrl"><a :href="x.externalUrl">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
+          <span v-for="x in props.row.artists" :key="x.id" :href="x.externalURL"><a :href="x.externalURL">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
         </div>
       </QTd>
     </template>
     <template v-slot:body-cell-albumName="props">
       <QTd :props="props">
         <div class="text-left">
-          <a :href="props.row.albumExternalUrl">{{ props.row.albumName }}</a>
+          <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
         </div>
       </QTd>
     </template>

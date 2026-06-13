@@ -30,11 +30,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
                 var data = await _searchService.Search(user.ID, searchDTO);
-                return Ok(new
-                {
-                    total = data.Item1,
-                    items = data.Item2
-                });
+                return Ok(data);
             }
             catch (Exception ex)
             {

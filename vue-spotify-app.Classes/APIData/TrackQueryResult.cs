@@ -14,6 +14,6 @@ namespace vue_spotify_app.Classes.APIData
         public int offset { get; set; }
         public string previous { get; set; }
         public int total { get; set; }
-        public List<Track> items { get; set; }
+        public List<Track> items { get; set; } = new List<Track>();
     }
 }

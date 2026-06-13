@@ -5,12 +5,12 @@ export default class TrackViewModel {
   id: string;
   name: string;
   uri: string;
-  externalUrl: string;
+  externalURL: string;
   artists: ArtistViewModel[] = [];
   albumName: string;
   albumCover: string;
   albumUri: string;
-  albumExternalUrl: string;
+  albumExternalURL: string;
   length: number;
   dateSaved: Date | null;
   dateLastPlayed: Date | null;
@@ -22,20 +22,20 @@ export default class TrackViewModel {
     this.id = data.id;
     this.name = data.name;
     this.uri = data.uri;
-    this.externalUrl = data.externalURL;
+    this.externalURL = data.externalURL;
     data.artists.forEach((artistData: any) => {
       const artist = new ArtistViewModel();
       artist.id = artistData.id;
       artist.name = artistData.name;
       artist.uri = artistData.URI;
-      artist.externalUrl = artistData.externalURL;
+      artist.externalURL = artistData.externalURL;
       artist.index = artistData.index;
       this.artists.push(artist);
     });
     this.albumName = data.albumName;
     this.albumCover = data.albumCover;
     this.albumUri = data.albumURI;
-    this.albumExternalUrl = data.albumExternalURL;
+    this.albumExternalURL = data.albumExternalURL;
     this.length = data.length;
     this.dateSaved = data.dateSaved ? new Date(data.dateSaved) : null;
     this.dateLastPlayed = data.dateLastPlayed? new Date(data.dateLastPlayed) : null;

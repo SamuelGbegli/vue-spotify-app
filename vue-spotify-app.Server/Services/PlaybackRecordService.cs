@@ -294,7 +294,7 @@ namespace vue_spotify_app.Server
             if(track != null)
             {
                 // Gets Spotify IDs of tracks with matching alias IDs
-                var trackIDs = await _dataContext.Tracks.Where(t => t.AliasID == track.AliasID && !string.IsNullOrWhiteSpace(t.Name)).Select(t => t.ID).ToListAsync();
+                var trackIDs = await _dataContext.Tracks.Where(t => t.AliasID != null && t.AliasID == track.AliasID && !string.IsNullOrWhiteSpace(t.Name)).Select(t => t.ID).ToListAsync();
                 // Gets all records with matching aliaa Spotify IDs
                 records = await _dataContext.PlaybackRecords.Where(x => trackIDs.Contains(x.SpotifyID)).OrderByDescending(x => x.DatePlayed).Skip((offset - 1) * numberOfRecords).Take(numberOfRecords).ToListAsync();
 

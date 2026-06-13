@@ -23,7 +23,6 @@
               options-dense
               >
             </QSelect>
-
               <QInput v-model="searchDto.track" label="Track name" dense/>
               <QInput v-model="searchDto.artist" label="Artist name" dense />
               <QInput v-model="searchDto.album" label="Album name" dense/>
@@ -49,8 +48,10 @@
   </div>
   <div>
     <QTabs v-model="selectedTab" inline-labels>
-      <QTab v-for="itemType in itemTypes" :key="itemType.value" :name="itemType.value" :label="itemType.label">
-        <QBadge floating color="primary" />
+      <QTab v-for="itemType in itemTypes" :disable="!foundItems.get(itemType.value) || foundItems.get(itemType.value)?.totalItems === 0" :key="itemType.value" :name="itemType.value" :label="itemType.label">
+        <QBadge floating color="primary" v-if="foundItems.has(itemType.value)">
+          {{ foundItems.get(itemType.value)?.totalItems || 0 }}
+        </QBadge>
       </QTab>
     </QTabs>
     <QTabPanels v-model="selectedTab">
@@ -58,32 +59,38 @@
         <!-- Track search results are displayed in the table below -->
         <QTable
           :columns="columns"
-          :rows="tracks"
+          :rows="foundItems.get('track') ? foundItems.get('track').items : []"
           row-key="id"
           wrap-cells
           :loading="statusCode === null"
           v-model:pagination="pagination"
           @request="onPageChange"
           >
-
+          <template v-slot:body-cell-albumImage="props">
+            <QTd :props="props">
+              <div>
+                <QImg :src="props.row.albumCover" alt="Album cover" style="width: 50px; height: 50px; object-fit: cover;"/>
+              </div>
+            </QTd>
+          </template>
           <template v-slot:body-cell-name="props">
           <QTd :props="props">
             <div>
-              <a :href="props.row.externalUrl">{{ props.row.name }}</a>
+              <a :href="props.row.externalURL">{{ props.row.name }}</a>
             </div>
           </QTd>
         </template>
           <template v-slot:body-cell-artists="props">
             <QTd :props="props">
             <div class="text-left">
-              <span v-for="x in props.row.artists" :key="x.id" :href="x.externalUrl"><a :href="x.externalUrl">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
+              <span v-for="x in props.row.artists" :key="x.id" :href="x.externalURL"><a :href="x.externalURL">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
             </div>
           </QTd>
           </template>
         <template v-slot:body-cell-album="props">
           <QTd :props="props">
             <div class="text-left">
-              <a :href="props.row.albumExternalUrl">{{ props.row.albumName }}</a>
+              <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
             </div>
           </QTd>
         </template>
@@ -143,8 +150,8 @@
 </template>
 <script setup lang="ts">
 import SearchDTO from '@/classes/searchDTO';
+import type SearchResultViewModel from '@/classes/searchResultViewModel';
 import TrackViewModel from '@/classes/trackViewModel';
-import AddTracksToPlaylistDialog from '@/dialogs/addTracksToPlaylistDialog.vue';
 import AddTrackToQueueDialog from '@/dialogs/addTrackToQueueDialog.vue';
 import ConvertMilisecondsToMinutesAndSeconds from '@/helperFunctions/convertMilisecondsToMinutesAndSeconds';
 import axios, { AxiosError } from 'axios';
@@ -154,12 +161,14 @@ import { computed, ref } from 'vue';
 
   const searchDto = ref<SearchDTO>(new SearchDTO());
   const tracks = ref<TrackViewModel[]>([]);
+  const foundItems = ref<Map<string, SearchResultViewModel[]>>(new Map<string, SearchResultViewModel[]>());
 
   const showAdvancedSearch = ref(false);
 
   const statusCode = ref<number | null>(0);
 
   const columns = [
+    { name: "albumImage", label: "", field: "albumCover", align: "left", style: "width: 50px", sortable: false },
     { name: 'name', label: 'Track Name', field: "name", align: 'left' },
     { name: 'artists', label: 'Artist', field: "artists", align: 'left' },
     { name: 'album', label: 'Album', field: "album", align: 'left' },
@@ -200,8 +209,14 @@ const selectedItemTypes = ref<{label: string, value: string}[]>([]);
         "Accept": "application/json"
       }
     });
+    foundItems.value = new Map<string, SearchResultViewModel[]>();
 
-    console.log(response.data);
+
+    response.data.forEach(element => {
+      foundItems.value.set(element.itemType, element as SearchResultViewModel[]);
+    });
+    console.log(foundItems.value.get("track").totalItems);
+
     statusCode.value = response.status;
     }
     catch(error){

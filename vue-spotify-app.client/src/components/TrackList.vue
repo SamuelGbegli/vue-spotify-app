@@ -30,13 +30,13 @@
               <QImg :src="x.albumCover" :alt="`Album cover for ${x.albumName} by ${x.artists.map((y) => y.name).join(', ')}`" width="50px" />
             </td>
             <td>
-              <a :href="x.externalUrl">{{ x.name }}</a>
+              <a :href="x.externalURL">{{ x.name }}</a>
             </td>
             <td>
-              <span v-for="y in x.artists" :key="y.id" :href="y.externalUrl"><a :href="y.externalUrl">{{ y.name }}</a><span v-if="x.artists.indexOf(y) < x.artists.length - 1">, </span></span>
+              <span v-for="y in x.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="x.artists.indexOf(y) < x.artists.length - 1">, </span></span>
             </td>
             <td>
-              <a :href="x.albumExternalUrl">{{ x.albumName }}</a>
+              <a :href="x.albumExternalURL">{{ x.albumName }}</a>
             </td>
 
             <td>{{ ConvertMilisecondsToMinutesAndSeconds(x.length) }}</td>

@@ -29,7 +29,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists, getUserPlaylistsOnly);
+                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists);
 
                 return Ok(new
                 {
