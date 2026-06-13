@@ -15,7 +15,7 @@ export default class Track {
     // Spotify's internal URI for the track
     spotifyUri: string = ""
     // A link to the track on Spotify's website
-    externalUrl: string = ""
+    externalURL: string = ""
     // The length of the track in milliseconds
     length: number = 0;
     // If true, means the track has been flagged to contain vulgar or offensive language
@@ -28,7 +28,7 @@ export default class Track {
         this.id = data.id;
         this.name = data.name;
         this.spotifyUri = data.uri;
-        this.externalUrl = data.external_urls.spotify;
+        this.externalURL = data.external_urls.spotify;
         this.length = data.duration_ms;
         this.explicit = data.explicit;
         this.popularity = data.popularity;

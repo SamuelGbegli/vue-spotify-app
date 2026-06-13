@@ -9,9 +9,9 @@
   <QImg fit="scale-down" width="300px" v-if="track" :src="track.albumCover"/>
   <QSkeleton v-else width="300px" height="300px" type="rect"/>
   <div v-if="track">
-    <h4><span><a :href="track.externalUrl">{{track.name}}</a> ({{ ConvertMilisecondsToMinutesAndSeconds(track.length) }})</span></h4>
-    <h5 v-if="track"><span v-for="y in track.artists" :key="y.id" :href="y.externalUrl"><a :href="y.externalUrl">{{ y.name }}</a><span v-if="track.artists.indexOf(y) < track.artists.length - 1">, </span></span></h5>
-    <h5 v-if="track"><a :href="track.albumExternalUrl">{{track.albumName}}</a></h5>
+    <h4><span><a :href="track.externalURL">{{track.name}}</a> ({{ ConvertMilisecondsToMinutesAndSeconds(track.length) }})</span></h4>
+    <h5 v-if="track"><span v-for="y in track.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="track.artists.indexOf(y) < track.artists.length - 1">, </span></span></h5>
+    <h5 v-if="track"><a :href="track.albumExternalURL">{{track.albumName}}</a></h5>
     <h5 v-if="track">Added to liked songs: {{ (!!track.dateSaved ? date.formatDate(track.dateSaved, "Do MMM YYYY HH:mm") : "n/a")}}</h5>
   </div>
   <div v-else class="q-gutter-lg q-pa-lg">

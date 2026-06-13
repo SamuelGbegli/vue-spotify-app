@@ -13,8 +13,9 @@ namespace vue_spotify_app.Server.Services
             _spotifyAPIWrapper = spotifyAPIWrapper;
         }
 
-        public async Task<(int, List<TrackViewModel>)> Search(Guid userID, SearchDTO searchDTO)
+        public async Task<List<SearchResultViewModel>> Search(Guid userID, SearchDTO searchDTO)
         {
+            var results = new List<SearchResultViewModel>();
             var tracks = new List<TrackViewModel>();
             var query = new StringBuilder();
 
@@ -38,29 +39,45 @@ namespace vue_spotify_app.Server.Services
 
             var response = await _spotifyAPIWrapper.GetAsync<SearchQueryResult>(userID, $"search?q={query}&type={types}&limit=10&offset={searchDTO.Offset}");
 
-            foreach (var item in response.Tracks.items)
+            if (searchDTO.ItemTypes.Contains("track") || searchDTO.ItemTypes.Count == 0)
             {
-                var trackViewModel = new TrackViewModel
+                var trackResults = new SearchResultViewModel
                 {
-                    Name = item.name,
-                    ExternalURL = item.external_urls.spotify,
-                    AlbumName = item.album.name,
-                    AlbumCover = item.album.images.FirstOrDefault(a => a.width == item.album.images.Max(i => i.width))?.url ?? "",
-                    AlbumExternalURL = item.album.external_urls.spotify,
-                    Length = item.duration_ms,
-                    ID = item.id,
+                    ItemType = "track",
+                    TotalItems = response.Tracks.total,
+                    Page = searchDTO.Offset / 10 + 1,
+                    Items = new List<object>()
                 };
-                foreach (var artist in item.artists)
+
+                foreach (var item in response.Tracks.items)
                 {
-                    trackViewModel.Artists.Add(new Classes.Artist
+                    var trackViewModel = new TrackViewModel
                     {
-                        Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify,
-                    });
+                        Name = item.name,
+                        ExternalURL = item.external_urls.spotify,
+                        AlbumName = item.album.name,
+                        AlbumCover = item.album.images.FirstOrDefault(a => a.width == item.album.images.Max(i => i.width))?.url ?? "",
+                        AlbumExternalURL = item.album.external_urls.spotify,
+                        Length = item.duration_ms,
+                        ID = item.id,
+                    };
+                    foreach (var artist in item.artists)
+                    {
+                        trackViewModel.Artists.Add(new ArtistViewModel
+                        {
+                            ID = artist.id,
+                            Name = artist.name,
+                            ExternalURL = artist.external_urls.spotify,
+                            Index = item.artists.IndexOf(artist)
+                        });
+                    }
+
+                   trackResults.Items.Add(trackViewModel);
                 }
-                tracks.Add(trackViewModel);
+                results.Add(trackResults);
             }
-            return (response.Tracks.total, tracks);
+
+            return results;
         }
     }
 }

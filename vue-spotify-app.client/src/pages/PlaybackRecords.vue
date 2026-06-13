@@ -49,7 +49,7 @@
           </template>
           <template v-slot:body-cell-artists="props">
             <q-td :props="props">
-              <span v-for="y in props.row.artists" :key="y.id" :href="y.externalUrl"><a :href="y.externalUrl">{{ y.name }}</a><span v-if="props.row.artists.indexOf(y) < props.row.artists.length - 1">, </span></span>
+              <span v-for="y in props.row.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="props.row.artists.indexOf(y) < props.row.artists.length - 1">, </span></span>
             </q-td>
           </template>
           <template v-slot:body-cell-albumName="props">
@@ -114,17 +114,17 @@
           </template>
           <template v-slot:body-cell-name="props">
             <q-td :props="props">
-              <a :href="props.row.externalUrl">{{ props.row.name }}</a>
+              <a :href="props.row.externalURL">{{ props.row.name }}</a>
             </q-td>
           </template>
           <template v-slot:body-cell-artists="props">
             <q-td :props="props">
-              <span v-for="y in props.row.artists" :key="y.id" :href="y.externalUrl"><a :href="y.externalUrl">{{ y.name }}</a><span v-if="props.row.artists.indexOf(y) < props.row.artists.length - 1">, </span></span>
+              <span v-for="y in props.row.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="props.row.artists.indexOf(y) < props.row.artists.length - 1">, </span></span>
             </q-td>
           </template>
           <template v-slot:body-cell-albumName="props">
             <q-td :props="props">
-              <a :href="props.row.albumExternalUrl">{{ props.row.albumName }}</a>
+              <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
             </q-td>
           </template>
           <template v-slot:body-cell-actions="props">
