@@ -1,6 +1,7 @@
 <template>
   <div class="col q-pa-md">
-    <h4 class="q-ma-sm">Playback records</h4>
+  <!--Title-->
+    <div class="text-h4">Playback records</div>
     <div class="row items-center">
       <h6 class="q-ma-sm">
         {{
@@ -13,15 +14,30 @@
                 : ''
         }}
       </h6>
+      <!--Chip to show the date range if either start or end date is set-->
+      <QChip v-if="startDate || endDate" >
+        {{
+          startDate && endDate
+            ? `Between ${date.formatDate(startDate, "Do MMM YYYY")} and ${date.formatDate(endDate, "Do MMM YYYY")}`
+            : startDate
+              ? `From ${date.formatDate(startDate, "Do MMM YYYY")}`
+              : endDate
+                ? `Up to ${date.formatDate(endDate, "Do MMM YYYY")}`
+                : ''
+         }}
+      </QChip>
       <QSpace />
+      <!--Button to open filter dialog to set start and end date ranges-->
       <QBtn label="Set dates" @click="openFilterDialog()" :disable="statusCode == null || groupStatusCode == null" />
     </div>
     <!--<QBtn label="Update records" @click="updateRecords()" />-->
+    <!--Tabs to switch between individual and grouped records-->
     <QTabs v-model="selectedTab">
       <QTab name="individual" label="Individual" />
       <QTab name="grouped" label="Grouped" />
     </QTabs>
     <QTabPanels v-model="selectedTab">
+    <!--Tab section for individual playback records-->
       <QTabPanel name="individual">
          <QTable
           style="height: 72vh"
@@ -35,6 +51,7 @@
           binary-sort-order
           @request="onIndividualPageChange"
           >
+          <!--Column for album cover-->
           <template v-slot:body-cell-albumCover="props">
             <q-td :props="props">
               <QImg :src="props.row.albumCover"
@@ -42,34 +59,42 @@
               width="48px" />
             </q-td>
           </template>
+          <!--Column for track name-->
           <template v-slot:body-cell-name="props">
             <q-td :props="props">
               <a :href="props.row.trackUrl">{{ props.row.name }}</a>
             </q-td>
           </template>
+          <!--Column for track artists-->
           <template v-slot:body-cell-artists="props">
             <q-td :props="props">
               <span v-for="y in props.row.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="props.row.artists.indexOf(y) < props.row.artists.length - 1">, </span></span>
             </q-td>
           </template>
+          <!--Column for album name-->
           <template v-slot:body-cell-albumName="props">
             <q-td :props="props">
               <a :href="props.row.albumLink">{{ props.row.albumName }}</a>
             </q-td>
           </template>
+          <!--Column for when track was recorded as played-->
           <template v-slot:body-cell-datePlayed="props">
             <q-td :props="props">
               {{ date.formatDate(props.row.datePlayed, "Do MMM YYYY HH:mm") }}
             </q-td>
           </template>
+          <!--Column for track options-->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" align="center">
+          <!--Button to open menu-->
           <QBtn flat dense icon="more_vert">
             <QMenu anchor="bottom left" self="top left">
                     <QList>
+                      <!--Item to view the track in a new page-->
                       <QItem clickable v-close-popup :to="`viewtrack/${props.row.spotifyID}`">
                         <QItemSection>View track</QItemSection>
                       </QItem>
+                      <!--Item to open dialog to add track to queue-->
                       <QItem clickable v-close-popup @click="openQueueDialog(props.row.spotifyID, props.row.name)">
                         <QItemSection>Add track to queue</QItemSection>
                       </QItem>
@@ -78,6 +103,7 @@
           </QBtn>
             </q-td>
           </template>
+          <!--Shows pagination field for user to navigate across table pages-->
           <template v-slot:bottom>
             <QSpace />
             <QPagination v-model="currentPage"
@@ -86,12 +112,14 @@
                         @update:model-value="getRecords()"
                         input />
           </template>
+          <!--Shows loading spinner when table is loading-->
           <template v-slot:loading>
             <QInnerLoading showing size="50px" color="green" />
           </template>
           </QTable>
       </QTabPanel>
 
+    <!--Tab section for grouped playback records-->
       <QTabPanel name="grouped">
         <QTable
           style="height: 72vh"
@@ -105,6 +133,7 @@
           binary-sort-order
           @request="onIndividualPageChange"
           >
+          <!--Column for album cover-->
           <template v-slot:body-cell-albumCover="props">
             <q-td :props="props">
               <QImg :src="props.row.albumCover"
@@ -112,29 +141,36 @@
               width="48px" />
             </q-td>
           </template>
+          <!--Column for track name-->
           <template v-slot:body-cell-name="props">
             <q-td :props="props">
               <a :href="props.row.externalURL">{{ props.row.name }}</a>
             </q-td>
           </template>
+          <!--Column for track artists-->
           <template v-slot:body-cell-artists="props">
             <q-td :props="props">
               <span v-for="y in props.row.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="props.row.artists.indexOf(y) < props.row.artists.length - 1">, </span></span>
             </q-td>
           </template>
+          <!--Column for album name-->
           <template v-slot:body-cell-albumName="props">
             <q-td :props="props">
               <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
             </q-td>
           </template>
+          <!--Column for track options-->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" align="center">
+          <!--Button to open menu-->
           <QBtn flat dense icon="more_vert">
             <QMenu anchor="bottom left" self="top left">
                     <QList>
+                      <!--Item to view the track in a new page-->
                       <QItem clickable v-close-popup :to="`viewtrack/${props.row.id}`">
                         <QItemSection>View track</QItemSection>
                       </QItem>
+                      <!--Item to open dialog to add track to queue-->
                       <QItem clickable v-close-popup @click="openQueueDialog(props.row.id, props.row.name)">
                         <QItemSection>Add track to queue</QItemSection>
                       </QItem>
@@ -143,6 +179,7 @@
           </QBtn>
             </q-td>
           </template>
+          <!--Shows pagination field for user to navigate across table pages-->
           <template v-slot:bottom>
             <QSpace />
             <QPagination v-model="currentGroupPage"
@@ -151,6 +188,7 @@
                         @update:model-value="getGroupedRecords()"
                         input />
           </template>
+          <!--Shows loading spinner when table is loading-->
           <template v-slot:loading>
             <QInnerLoading showing size="50px" color="green" />
           </template>
@@ -168,10 +206,14 @@
   import { useAuthStore } from '@/stores/authStore';
   import axios, { AxiosError } from 'axios';
   import { Dialog, Loading, date } from 'quasar';
-  import { onBeforeMount, ref } from 'vue';
+  import { onBeforeMount, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 
   const authStore = useAuthStore();
+
+  const route  = useRoute();
+  const router = useRouter();
 
   const startDate = ref<string | null>(null);
   const endDate = ref<string | null>(null);
@@ -198,6 +240,7 @@
   // Sets the tab visible in the page
   const selectedTab = ref("individual");
 
+  // Table columns for individual playback records
     const individualColumns = [
     {
       name: "albumCover",
@@ -249,6 +292,7 @@
     }
   ];
 
+  // Table columns for grouped playback records
     const groupColumns = [
     {
       name: "albumCover",
@@ -300,6 +344,7 @@
     }
   ];
 
+  // Pagination values for individual playback records
   const individualPagination = ref({
     sortBy: "datePlayed",
     descending: true,
@@ -308,7 +353,7 @@
     rowsNumber: 100
   });
 
-
+  // Pagination values for grouped playback records
   const groupPagination = ref({
     descending: true,
     page: 1,
@@ -317,9 +362,34 @@
   });
 
   onBeforeMount(async () => {
+    onRouteUpdate();
     await getRecords();
     await getGroupedRecords();
   })
+
+  watch(route, async () => {
+    onRouteUpdate();
+  });
+
+  function onRouteUpdate() {
+    console.log("Route updated:", route.query);
+    if(route.query.startDate) startDate.value = route.query.startDate as string;
+    if(route.query.endDate) endDate.value = route.query.endDate as string;
+    if(route.query.page) currentPage.value = parseInt(route.query.page as string);
+    if(route.query.groupPage) currentGroupPage.value = parseInt(route.query.groupPage as string);
+    console.log(`Route updated: startDate=${startDate.value}, endDate=${endDate.value}, page=${individualPagination.value.page}, groupPage=${groupPagination.value.page}`);
+    updateAddressBar();
+  }
+
+  function updateAddressBar(){
+    const query = new URLSearchParams();
+    if(startDate.value) query.append("startDate", startDate.value.toString());
+    if(endDate.value) query.append("endDate", endDate.value.toString());
+    query.append("page", currentPage.value.toString());
+    query.append("groupPage", currentGroupPage.value.toString());
+    router.push(`playbackrecords?${query.toString()}`);
+    console.log(`playbackrecords?${query.toString()}`);
+  }
 
   async function updateRecords() {
     try {
@@ -344,6 +414,9 @@
   }
 
   async function getRecords() {
+
+    updateAddressBar();
+
     statusCode.value = null;
 
     const searchParams = new URLSearchParams();
@@ -385,6 +458,9 @@
   }
 
   async function getGroupedRecords() {
+
+    updateAddressBar();
+
     groupStatusCode.value = null;
 
     const searchParams = new URLSearchParams();
@@ -430,6 +506,7 @@
       endDate.value = data.endDate;
       currentPage.value = 1;
       currentGroupPage.value = 1;
+
       await getRecords();
       await getGroupedRecords();
     });
