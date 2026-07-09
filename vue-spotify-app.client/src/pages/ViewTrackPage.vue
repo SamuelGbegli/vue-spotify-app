@@ -171,10 +171,13 @@ import {useRoute, useRouter} from "vue-router"
 import { date } from "quasar";
 import type TrackPlaylistViewModel from "@/classes/trackPlaylistViewModel";
 
+import { useTitle } from "@vueuse/core";
+
 const track = ref<TrackViewModel | null>(null)
 
 const route = useRoute();
 const authStore = useAuthStore();
+const title = useTitle();
 
 const listOfRecords = ref<string[]>([]);
 const recordsPage = ref(1);
@@ -251,11 +254,12 @@ async function getTrackInformation() {
       }
     });
     track.value = new TrackViewModel(response.data);
-    console.log(response.data);
+    title.value = `${track.value.name} - ${track.value.artists.map((x) => x.name).join(", ")}`;
   }
   catch (ex) {
     const error = ex as AxiosError;
     console.log(error);
+    title.value = "Error - Track not found";
     alert("An error has occured.");
   }
 }

@@ -19,8 +19,7 @@
         <QSkeleton width="300px" type="rect" />
       </div>
     </div>
-    <div>
-      <!--<TrackList :playlistId="route.params.id?.toString()" />-->
+    <div v-if="playlistStatusCode === 200" class="q-ma-sm  q-gutter-sm">
       <TrackListNew :playlistId="route.params.id?.toString()"/>
     </div>
   </div>
@@ -28,13 +27,12 @@
 </template>
 <script setup lang="ts">
   import PlaylistViewModel from '@/classes/playlistViewModel';
-  import TrackViewModel from '@/classes/trackViewModel';
-  import TrackList from '@/components/TrackList.vue';
   import TrackListNew from '@/components/TrackListNew.vue';
   import { useAuthStore } from '@/stores/authStore';
   import axios, { AxiosError } from 'axios';
   import { onBeforeMount, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import { useTitle } from '@vueuse/core';
 
 
   // Stores the view model for the playlist
@@ -42,26 +40,18 @@
   // Stores the status code when fetching a playlist
   const playlistStatusCode = ref<number | null>(null);
 
-  const numberOftracks = ref<number | null>(null)
-
-  const pageOffset = ref<number>(1)
-
-  const trackLimit = ref<number>(50)
-
-  const trackQuery = ref<string>("")
-
-  const trackViewModels = ref<TrackViewModel[]>([])
-
-  const trackStatusCode = ref<number | null>(null)
-
   const route = useRoute();
   const router = useRouter();
+  const title = useTitle('Playlist');
 
   const authStore = useAuthStore();
 
   onBeforeMount(async () => {
     await getPlaylist();
-    await getTracks();
+  });
+
+  watch(() => route.params.id, async () => {
+    await getPlaylist();
   });
 
   async function getPlaylist() {
@@ -73,36 +63,12 @@
         }
       );
       playlistViewModel.value = response.data as PlaylistViewModel;
+      title.value = playlistViewModel.value.name;
       playlistStatusCode.value = response.status;
 
     } catch (error) {
+      title.value = 'Playlist not found';
       playlistStatusCode.value = (error as AxiosError).status;
-    }
-  }
-
-  async function getTracks() {
-
-    pageOffset.value = route.query.page ? parseInt(route.query.page.toString()) : 1
-    trackQuery.value = route.query.trackQuery ? route.query.trackQuery.toString() : ""
-
-    trackStatusCode.value = null;
-
-    try {
-      const response = await axios.get(`/api/playlist/getplaylisttracks/${route.params.id}?offset=${(pageOffset.value - 1) * trackLimit.value}&numberOfTracks=${trackLimit.value}&trackQuery=${trackQuery.value}`,
-        {
-          headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
-        })
-      console.log(response.data)
-      trackViewModels.value = []
-      numberOftracks.value = response.data.totalTracks
-      response.data.forEach((i) => {
-        const trackViewModel: TrackViewModel = new TrackViewModel(i)
-        trackViewModels.value.push((trackViewModel))
-      })
-      trackStatusCode.value = response.status;
-    } catch (error) {
-      const ex = error as AxiosError
-      trackStatusCode.value = ex.status || null
     }
   }
 

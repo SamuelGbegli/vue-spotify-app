@@ -38,15 +38,24 @@ const router = createRouter({
     },
     {
       path: "/playbackrecords",
-      component: PlaybackRecords
+      component: PlaybackRecords,
+      meta: {
+        title: "Playback Records",
+      }
     },
     {
       path: "/addtoqueue",
-      component: AddTrackToQueue
+      component: AddTrackToQueue,
+      meta: {
+        title: "Add track to queue",
+      }
     },
     {
       path: "/playlists",
-      component: PlaylistPage
+      component: PlaylistPage,
+      meta: {
+        title: "Playlists",
+      }
     },
     {
       path: "/playlists/:id",
@@ -66,11 +75,17 @@ const router = createRouter({
     },
     {
       path: "/search",
-      component: SearchPage
+      component: SearchPage,
+      meta: {
+        title: "Search",
+      }
     },
     {
       path: '/:pathMatch(.*)*',
       component: NotFound,
+      meta: {
+        title: "Page Not Found",
+      }
     },
   ],
 })

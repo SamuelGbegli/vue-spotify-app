@@ -10,7 +10,10 @@ import 'quasar/src/css/index.sass'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/authStore'
+import { useTitle } from '@vueuse/core'
 import axios from 'axios'
+
+const title = useTitle();
 
 const app = createApp(App)
 
@@ -50,17 +53,20 @@ router.beforeEach(async (to) => {
       searchParams.delete('state')
       url.searchParams.delete('code')
       url.searchParams.delete('state')
-      console.log(authStore.redirectPath);
 
+      title.value = to.meta.title as string || 'Vue Spotify App';
       router.replace(authStore.redirectPath);
     }
     catch (ex) {
-
+      title.value = 'Error';
       const error = ex as AxiosError;
       authStore.setLoggedIn(error.response?.status || 0);
     }
 
 
+  }
+  else{
+    title.value = to.meta.title as string || 'Vue Spotify App';
   }
 
   }
