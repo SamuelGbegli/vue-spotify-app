@@ -1,7 +1,8 @@
 # vue-spotify-app
 
 ## Current development status
-- Working on a refined page to search for items on Spotify, including tracks, albums and playlists
+- [ ] Working on adding tracks to the user's queue in bulk
+- [ ] Working on a refined page to search for items on Spotify, including tracks, albums and playlists
 ## Overview
 This is a web application designed to integrate with Spotify's web API and fetch and save data relating to the user's listening habits, as well as view information relating to tracks on the Spotify platform.
 ## Development stack
