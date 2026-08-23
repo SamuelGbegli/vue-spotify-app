@@ -38,7 +38,7 @@ namespace vue_spotify_app.Classes
         /// <summary>
         /// A link to the track's album cover.
         /// </summary>
-        public string AlbumCover { get; set; }
+        public string? AlbumCover { get; set; }
         /// <summary>
         /// The internal Spotify URI for the track's album.
         /// </summary>

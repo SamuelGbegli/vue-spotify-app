@@ -1,10 +1,13 @@
 <template>
-  <QDialog class="relative-position" ref="dialogRef" backdrop-filter="blur(4px)">
+  <QDialog class="relative-position" ref="dialogRef" backdrop-filter="blur(4px)" persistent>
       <QCard>
-        <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">
-          <QCardSection>
-          <div class="text-h6">Adding {{ name }} to queue</div>
-
+        <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">          
+            <QCardSection class="row items-center q-pb-none">
+              <div class="text-h6">Adding {{ name }} to queue</div>
+              <QSpace/>
+              <QBtn icon="close" flat dense round v-close-popup />
+            </QCardSection>
+            <QCardSection>
           <QSelect
             v-model="selectedDevice"
             :options="availableDevices"
@@ -18,13 +21,12 @@
         </QCardSection>
 
         <QCardActions align="right">
-          <QBtn flat label="Cancel" color="primary" @click="onDialogCancel" />
           <QBtn flat label="OK" color="primary" @click="onOK" />
         </QCardActions>
         </div>
     <div v-else-if="deviceStatusCode != null">
       <div>{{ deviceStatusCode === 200 ? 'No available devices were found.' : 'An error has occured.' }}</div>
-      <QBtn flat label="Close" color="primary" @click="onDialogCancel" />
+      <QBtn flat label="Retry" color="primary" @click="getAvailableDevices" />
     </div>
       <QInnerLoading :showing="deviceStatusCode === null">
       <div class="row items-center justify-center" style="height: 200px;">
@@ -50,8 +52,11 @@ const props = defineProps<{
 }>();
 
   const authStore = useAuthStore();
+  // The device's queue that the track will be added to
   const selectedDevice = ref<DeviceInfo | null | undefined>();
+  // A list of devices the user can select
   const availableDevices = ref<DeviceInfo[]>([]);
+  // The status code of the available devices call
   const deviceStatusCode = ref<number | null>(null);
 
 onBeforeMount( async () => {

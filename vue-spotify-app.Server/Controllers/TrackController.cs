@@ -206,5 +206,23 @@ namespace vue_spotify_app.Server.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpPost]
+        [Route("validatetracks")]
+        [Authorize]
+        public async Task<IActionResult> ValidateTracks([FromBody] List<string> trackIds)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var data = await _trackService.ValidateTracks(user.ID, trackIds);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
         }
 }

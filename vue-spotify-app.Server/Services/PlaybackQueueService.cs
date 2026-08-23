@@ -15,9 +15,13 @@ namespace vue_spotify_app.Server.Services
             return response.devices;
         }
 
-        public async Task AddTrackToQueue(Guid userId, string spotifyTrackID, string deviceId)
+        public async Task AddTrackToQueue(Guid userId, List<string> spotifyTrackIDs, string deviceId)
         {
-            await _spotifyAPIWrapper.PostAsync(userId, $"me/player/queue?uri=spotify:track:{spotifyTrackID}&device_id={deviceId}", null);
+            foreach (var trackID in spotifyTrackIDs)
+            {
+                await _spotifyAPIWrapper.PostAsync(userId, $"me/player/queue?uri=spotify:track:{trackID}&device_id={deviceId}", null);
+                await Task.Delay(500); // Delay to avoid hitting rate limits
+            }
         }
     }
 }

@@ -46,7 +46,7 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.SpotifyTokens.FirstAsync(t => t.ID.ToString() == userId);
 
-                await _playbackQueueService.AddTrackToQueue(user.ID, dto.SpotifyTrackID, dto.DeviceID);
+                await _playbackQueueService.AddTrackToQueue(user.ID, dto.SpotifyTrackIDs, dto.DeviceID);
                 return Ok();
             }
             catch (Exception ex)
