@@ -117,7 +117,7 @@
                       <QItemLabel>Copy track ID</QItemLabel>
                     </QItemSection>
                   </QItem>
-                  <QItem clickable v-close-popup @click="openQueueDialog(props.row.id, props.row.name)">
+                  <QItem clickable v-close-popup @click="openQueueDialog(props.row)">
                     <QItemSection>
                       <QItemLabel>Add to queue</QItemLabel>
                     </QItemSection>
@@ -255,12 +255,11 @@ const selectedItemTypes = ref<{label: string, value: string}[]>([]);
     await submit();
   }
 
-  function openQueueDialog(trackId: string, name: string) {
+  function openQueueDialog(track: TrackViewModel) {
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        trackId: trackId,
-        name: name
+        track: track
       }
     }).onOk(async (data) => {
 

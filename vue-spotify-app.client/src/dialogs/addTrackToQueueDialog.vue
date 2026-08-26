@@ -3,11 +3,12 @@
       <QCard>
         <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">          
             <QCardSection class="row items-center q-pb-none">
-              <div class="text-h6">Adding {{ name }} to queue</div>
+              <div class="text-h6">Adding track to queue</div>
               <QSpace/>
               <QBtn icon="close" flat dense round v-close-popup />
             </QCardSection>
             <QCardSection>
+              <TrackPreviewCard :track="props.track" />
           <QSelect
             v-model="selectedDevice"
             :options="availableDevices"
@@ -40,6 +41,8 @@
 <script setup lang="ts">
 
 import DeviceInfo from '@/classes/deviceInfo';
+import type TrackViewModel from '@/classes/trackViewModel';
+import TrackPreviewCard from '@/components/TrackPreviewCard.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { biSpotify } from '@quasar/extras/bootstrap-icons';
 import axios, { AxiosError } from 'axios';
@@ -47,8 +50,7 @@ import { Notify, useDialogPluginComponent } from 'quasar';
 import { onBeforeMount, ref } from 'vue';
 
 const props = defineProps<{
-  trackId: string;
-  name: string;
+  track: TrackViewModel
 }>();
 
   const authStore = useAuthStore();

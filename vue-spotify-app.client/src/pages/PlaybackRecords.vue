@@ -575,13 +575,15 @@ import { useRoute, useRouter } from 'vue-router';
   }
 
   // Function to open a dialog to add a track to the queue
-  function openQueueDialog(trackId: string, name: string) {
+  async function openQueueDialog(trackID: string) {
     // Creates dialog with the AddTrackToQueueDialog component, with the track ID and name passed down as properties
+
+    const response = await axios.get(`/api/track/gettrack/${trackID}`);
+
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        trackId: trackId,
-        name: name
+        track: response.data as TrackViewModel
       }
     }).onOk(async (data) => {
 

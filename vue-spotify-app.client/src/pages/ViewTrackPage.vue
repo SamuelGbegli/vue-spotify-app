@@ -1,7 +1,3 @@
-<!--
-  TODO:
-    Add calls to get playlists track is in
--->
 <template>
 <div class="q-pa-md">
 <!--TODO: add skeleton for loading-->
@@ -21,7 +17,7 @@
     <QSkeleton width="300px" type="rect"/>
   </div>
 </div>
-<TrackPreviewCard v-if="track" :track="track"/>
+<!--<TrackPreviewCard v-if="track" :track="track" :showLikedSongs="true"/>-->
 <div class="row q-gutter-md">
   <div class="col relative-position">
     <h5>Playlists containing this track</h5>
