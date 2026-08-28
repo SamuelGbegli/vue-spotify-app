@@ -55,7 +55,7 @@
                   <QItem clickable v-close-popup :to="`viewtrack/${x.id}`">
                     <QItemSection>View track</QItemSection>
                   </QItem>
-                  <QItem clickable v-close-popup @click="openQueueDialog(x.id, x.name)">
+                  <QItem clickable v-close-popup @click="openQueueDialog(x)">
                     <QItemSection>Add track to queue</QItemSection>
                   </QItem>
                   <QItem clickable v-close-popup @click="copyTrackIdToClipboard(x.id)">
@@ -270,12 +270,11 @@
     }
   }
 
-  function openQueueDialog(trackId: string, name: string) {
+  function openQueueDialog(track:TrackViewModel) {
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        trackId: trackId,
-        name: name
+        track: track
       }
     }).onOk(async (data) => {
       Notify.create("Successfully added track to queue.");

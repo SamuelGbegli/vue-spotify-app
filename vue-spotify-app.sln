@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36717.8
+# Visual Studio Version 18
+VisualStudioVersion = 18.8.12023.21 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "vue-spotify-app.client", "vue-spotify-app.client\vue-spotify-app.client.esproj", "{7A6F43AE-0CB6-F63A-E41B-01E278A78C62}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vue-spotify-app.Server", "vue-spotify-app.Server\vue-spotify-app.Server.csproj", "{C0D60BBF-30AF-4D33-86D4-54EA00E83DD7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vue-spotify-app.Classes", "vue-spotify-app.Classes\vue-spotify-app.Classes.csproj", "{3A6C2E3B-07E5-4B0F-8754-A10658382E71}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "vue-spotify-app.Database", "vue-spotify-app.Database\vue-spotify-app.Database.sqlproj", "{FAEEA7A8-3478-4141-BDED-1898778C3661}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,12 @@ Global
 		{3A6C2E3B-07E5-4B0F-8754-A10658382E71}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A6C2E3B-07E5-4B0F-8754-A10658382E71}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A6C2E3B-07E5-4B0F-8754-A10658382E71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

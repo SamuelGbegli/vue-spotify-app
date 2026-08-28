@@ -8,7 +8,7 @@ namespace vue_spotify_app.Classes
 {
     public class AddToQueueDTO
     {
-        public string SpotifyTrackID { get; set; }
+        public List<string> SpotifyTrackIDs { get; set; }
         public string DeviceID { get; set; }
     }
 }

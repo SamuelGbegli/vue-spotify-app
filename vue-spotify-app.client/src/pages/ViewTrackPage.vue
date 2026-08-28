@@ -1,7 +1,3 @@
-<!--
-  TODO:
-    Add calls to get playlists track is in
--->
 <template>
 <div class="q-pa-md">
 <!--TODO: add skeleton for loading-->
@@ -21,42 +17,10 @@
     <QSkeleton width="300px" type="rect"/>
   </div>
 </div>
+<!--<TrackPreviewCard v-if="track" :track="track" :showLikedSongs="true"/>-->
 <div class="row q-gutter-md">
   <div class="col relative-position">
     <h5>Playlists containing this track</h5>
-    <!--<div v-if="playlistStatusCode === 200 || playlistStatusCode == null" class="q-gutter-sm">
-    <h6>Total playlists: {{ totalPlaylists }}</h6>
-      <QMarkupTable v-if="listOfPlaylists.length > 0">
-        <thead>
-        <tr>
-          <th></th>
-          <th>Name</th>
-          <th>Date added to playlist</th>
-          <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="x in listOfPlaylists" :key="x.playlistID">
-          <td>
-            <QImg :src="x.image" :alt="`Playlist cover for ${x.playlistName}`" width="50px"/>
-          </td>
-          <td><a :href="'#'">{{ x.playlistName }}</a></td>
-          <td>{{ date.formatDate(x.dateAdded, "Do MMM YYYY HH:mm") }}</td>
-          <td>
-          <QBtn size="sm" color="secondary" label="view" :to="`/playlists/${x.playlistID}`" />
-          </td>
-        </tr>
-        </tbody>
-      </QMarkupTable>
-      <QPagination v-if="totalPlaylists > 0" v-model="playlistPage" :max="Math.ceil(totalPlaylists / 20)" :max-pages="6" boundary-numbers direction-links @update:model-value="getTrackPlaylists()"/>
-      <div v-else-if="playlistStatusCode === 200">No playlists found containing this track.</div>
-    </div>
-    <div v-else>An error has occured while fetching playlists containing this track.</div>
-    <QInnerLoading :showing="playlistStatusCode === null">
-      <div class="row items-center justify-center" style="height: 200px;">
-        <q-spinner-dots size="50px" color="green" />
-      </div>
-    </QInnerLoading>-->
     <QTable
       :columns="playlistColumns"
       :rows="listOfPlaylists"
@@ -104,29 +68,6 @@
   </div>
   <div class="col relative-position">
     <h5>Playback records</h5>
-    <!--<div v-if="recordsStatusCode === 200 || recordsStatusCode == null" class="q-gutter-sm">
-      <h6>Total records: {{ totalRecords }}</h6>
-      <QMarkupTable v-if="listOfRecords.length > 0">
-        <thead>
-        <tr>
-          <th>Date played</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="x in listOfRecords" :key="x">
-          <td>{{ date.formatDate(x, "Do MMM YYYY HH:mm") }}</td>
-        </tr>
-        </tbody>
-      </QMarkupTable>
-      <QPagination v-if="totalRecords > 0" v-model="recordsPage" :max="Math.ceil(totalRecords / 20)" :max-pages="6" boundary-numbers direction-links @update:model-value="getTrackPlaybackRecords()"/>
-      <div v-else-if="recordsStatusCode === 200">No playback records found.</div>
-    </div>
-    <div v-else>An error has occured while fetching playback records.</div>
-    <QInnerLoading :showing="recordsStatusCode === null">
-      <div class="row items-center justify-center" style="height: 200px;">
-        <q-spinner-dots size="50px" color="green" />
-      </div>
-    </QInnerLoading>-->
     <QTable
       :columns="recordsColumns"
       :rows="listOfRecords"
@@ -172,6 +113,7 @@ import { date } from "quasar";
 import type TrackPlaylistViewModel from "@/classes/trackPlaylistViewModel";
 
 import { useTitle } from "@vueuse/core";
+import TrackPreviewCard from "@/components/TrackPreviewCard.vue";
 
 const track = ref<TrackViewModel | null>(null)
 

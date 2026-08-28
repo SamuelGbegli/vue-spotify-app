@@ -368,7 +368,7 @@ namespace vue_spotify_app.Server
                                           URI = t.SpotifyURI,
                                           ExternalURL = t.ExternalURL,
                                           AlbumName = t.Album.Name,
-                                          AlbumCover = t.Album.AlbumCover.Link,
+                                          AlbumCover = t.Album.AlbumCover?.Link,
                                           AlbumURI = t.Album.SpotifyURI,
                                           AlbumExternalURL = t.Album.ExternalURL,
                                           Length = t.Length,
@@ -640,8 +640,8 @@ namespace vue_spotify_app.Server
         /// <summary>
         /// Returns information regarding a track in Spotify.
         /// </summary>
-        /// <param name="id">Ihe inputted track ID.</param>
-        /// <param name="authToken">The authorisation token used to view track information.</param>
+        /// <param name="trackID">Ihe inputted track ID.</param>
+        /// <param name="userID">The ID of the user.</param>
         /// <returns>A view model containing information about a track.</returns>
         /// <exception cref="Exception"></exception>
         public async Task<TrackViewModel?> GetTrack(Guid userID, string trackID)
@@ -816,13 +816,13 @@ namespace vue_spotify_app.Server
                     Artists = albumArtists,
                     SpotifyURI = album.uri,
                     ExternalURL = album.external_urls.spotify,
-                    AlbumType = album.type
-                };
-                albumEntity.AlbumCover = new Classes.AlbumCover
-                {
-                    Height = (int)album.images[0].height,
-                    Width = (int)album.images[0].width,
-                    Link = album.images[0].url
+                    AlbumType = album.type,
+                    AlbumCover = new Classes.AlbumCover
+                    {
+                        Height = (int)album.images[0].height,
+                        Width = (int)album.images[0].width,
+                        Link = album.images[0].url
+                    }
                 };
                 await _dataContext.Albums.AddAsync(albumEntity);
 
@@ -933,6 +933,28 @@ namespace vue_spotify_app.Server
                 await AddOrUpdateTrack(track);
                 await _dataContext.SaveChangesAsync();
             }
+        }
+
+        /// <summary>
+        /// Checks a list of Spotify track IDs and sees if they exist.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="trackIds"></param>
+        /// <returns></returns>
+        public async Task<List<TrackViewModel>> ValidateTracks(Guid userId, List<string> trackIds)
+        {
+            var tracks = new List<TrackViewModel>();
+
+            foreach (var trackId in trackIds)
+            {
+                var track = await GetTrack(userId, trackId);
+                if (track != null)
+                {
+                    tracks.Add(track);
+                }
+            }
+
+                return tracks;
         }
     }
 }
