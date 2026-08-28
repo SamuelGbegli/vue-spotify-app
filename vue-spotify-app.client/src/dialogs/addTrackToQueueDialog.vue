@@ -8,7 +8,7 @@
               <QBtn icon="close" flat dense round v-close-popup />
             </QCardSection>
             <QCardSection>
-              <TrackPreviewCard :track="props.track" />
+              <TrackPreviewCard :track="props.track" :show-liked-songs="false" />
           <QSelect
             v-model="selectedDevice"
             :options="availableDevices"
@@ -86,12 +86,12 @@ defineEmits([
 
 const {dialogRef, onDialogOK, onDialogCancel} = useDialogPluginComponent();
 
-function onOK(){
-  try{
-    axios.post(
+async function onOK(){
+  try {
+    await axios.post(
       `/api/playbackqueue/addtoqueue`,
       {
-        spotifyTrackId: props.trackId,
+        spotifyTrackIds: [props.track.id],
         deviceId: selectedDevice.value?.id
       });
   Notify.create({

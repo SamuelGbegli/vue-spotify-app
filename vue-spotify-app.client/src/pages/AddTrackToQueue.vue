@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-sm">
+  <!--<div class="q-pa-sm">
     <h4 class="q-ma-sm">Add Track to Queue</h4>
     <p>Please enter the ID of a track in Spotify.</p>
     <QForm @submit.prevent="addToQueue()">
@@ -36,9 +36,9 @@
       </div>
     </div>
   </div>
-  <hr/>
+  <hr/>-->
 
-  <div>
+  <div class="q-pa-sm">
     <div class="text-h4">Add tracks to queue</div>
     <p>Enter a list of track IDs to add to the queue. Place each ID on a new line.</p>
     <QForm @submit.prevent="validateIDs()">

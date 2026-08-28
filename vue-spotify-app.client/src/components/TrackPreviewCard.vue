@@ -13,7 +13,7 @@
                         </span>
                     </div>
                     <div class="text-subtitle2">{{track.albumName}}</div>
-                    <div class="text-subtitle2">Added to Liked Songs: {{ (!!track.dateSaved ? date.formatDate(track.dateSaved, "Do MMM YYYY HH:mm") : "n/a")}}</div>
+                    <div v-if="showLikedSongs" class="text-subtitle2">Added to Liked Songs: {{ (!!track.dateSaved ? date.formatDate(track.dateSaved, "Do MMM YYYY HH:mm") : "n/a")}}</div>
             </QCardSection>
         </QCardSection>
     </QCard>
