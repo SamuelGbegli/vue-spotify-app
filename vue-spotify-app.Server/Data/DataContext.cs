@@ -54,6 +54,8 @@ namespace vue_spotify_app.Server.Data
 
         public DbSet<TrackAlias> TrackAliases { get; set; }
 
+        public DbSet<SavedTrack> SavedTracks { get; set; }
+
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
@@ -183,6 +185,13 @@ namespace vue_spotify_app.Server.Data
                 .HasMany(a => a.Tracks)
                 .WithOne(t => t.Alias)
                 .HasForeignKey(t => t.AliasID);
+
+            modelBuilder.Entity<SavedTrack>()
+                .ToTable("SavedTracks")
+                .HasOne(st => st.User)
+                .WithMany(u => u.SavedTracks)
+                .HasForeignKey(st => st.UserID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
     }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using vue_spotify_app.Server.Data;
 
@@ -11,9 +12,11 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20260831155533_AddSavedTrackTable")]
+    partial class AddSavedTrackTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -280,7 +283,6 @@ namespace vue_spotify_app.Server.Migrations
             modelBuilder.Entity("vue_spotify_app.Classes.SavedTrack", b =>
                 {
                     b.Property<string>("ID")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("DateAdded")
@@ -290,12 +292,16 @@ namespace vue_spotify_app.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("UserID")
+                    b.Property<string>("UserID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("UserID1")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("ID");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("UserID1");
 
                     b.ToTable("SavedTracks", (string)null);
                 });
@@ -505,13 +511,9 @@ namespace vue_spotify_app.Server.Migrations
 
             modelBuilder.Entity("vue_spotify_app.Classes.SavedTrack", b =>
                 {
-                    b.HasOne("vue_spotify_app.Classes.User", "User")
+                    b.HasOne("vue_spotify_app.Classes.User", null)
                         .WithMany("SavedTracks")
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                        .HasForeignKey("UserID1");
                 });
 
             modelBuilder.Entity("vue_spotify_app.Classes.Track", b =>

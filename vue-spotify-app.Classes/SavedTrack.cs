@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace vue_spotify_app.Classes
@@ -12,11 +13,16 @@ namespace vue_spotify_app.Classes
         /// <summary>
         /// Identifier for the saved track.
         /// </summary>
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string ID { get; set; }
+        /// <summary>
+        /// The user that saved the track.
+        /// </summary>
+        public User User { get; set; }
         /// <summary>
         /// Identifier for the user that saved the track.
         /// </summary>
-        public string UserID { get; set; }
+        public Guid UserID { get; set; }
         /// <summary>
         /// Identifier for the track in Spotify.
         /// </summary>
