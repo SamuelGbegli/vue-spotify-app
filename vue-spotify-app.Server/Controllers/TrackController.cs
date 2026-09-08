@@ -113,7 +113,7 @@ namespace vue_spotify_app.Server.Controllers
                 return Ok(new
                 {
                     timeElapsed = stopwatch.Elapsed,
-                    totalTracks =data.Item1,
+                    totalTracks = data.Item1,
                     tracks = data.Item2
                 });
             }
@@ -170,43 +170,6 @@ namespace vue_spotify_app.Server.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("exporttracks")]
-        public async Task<IActionResult> ExportTracks()
-        {
-            // TODO: rewrite function to create and return CSV file
-            try
-            {
-                //var tracks = await _trackService.GetTracks();
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpPost]
-        [Route("searchtracks")]
-        [Authorize]
-        public async Task<IActionResult> SearchTracks([FromBody] SearchDTO searchDTO)
-        {
-            try
-            {
-                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
-                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
-                var data = await _trackService.SearchForTracks(user.ID, searchDTO);
-                return Ok(new {
-                    total = data.Item1,
-                    tracks = data.Item2
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
         [HttpPost]
         [Route("validatetracks")]
         [Authorize]
@@ -224,5 +187,21 @@ namespace vue_spotify_app.Server.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet]
+        [Route("exporttracks")]
+        public async Task<IActionResult> ExportTracks()
+        {
+            // TODO: rewrite function to create and return CSV file
+            try
+            {
+                //var tracks = await _trackService.GetTracks();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
+    }
 }

@@ -64,7 +64,7 @@
 <script setup lang="ts">
   import DeviceInfo from '@/classes/deviceInfo';
 import type TrackViewModel from '@/classes/trackViewModel';
-import AddTracksToQueueDialog from '@/dialogs/addTracksToQueueDialog.vue';
+import AddTrackToQueueDialog from '@/dialogs/addTrackToQueueDialog.vue';
   import { useAuthStore } from '@/stores/authStore';
   import axios from 'axios';
 import { Dialog } from 'quasar';
@@ -125,7 +125,7 @@ import { Dialog } from 'quasar';
       }
       else{
         Dialog.create({
-          component: AddTracksToQueueDialog,
+          component: AddTrackToQueueDialog,
             componentProps: {
               tracks: foundTracks
             }

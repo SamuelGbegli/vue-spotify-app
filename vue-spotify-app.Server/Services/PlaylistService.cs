@@ -497,6 +497,19 @@ namespace vue_spotify_app.Server
                     if (playlistsToAdd.Count == bufferSize)
                     {
                         _dataContext.Playlists.AddRange(playlistsToAdd);
+                        foreach(var item in playlistsToAdd)
+                        {
+                            var trackList = new TrackList
+                            {
+                                ID = Guid.NewGuid(),
+                                Name = item.Name,
+                                SortName = RegexHelpers.GenerateSortName(item.Name),
+                                TrackListType = TrackListType.Playlist,
+                                UserID = item.OwnerID,
+                                PlaylistID = item.ID
+                            };
+                            await _dataContext.TrackLists.AddAsync(trackList);
+                        }
                         await _dataContext.SaveChangesAsync();
                         Debug.WriteLine($"Added ${playlistsToAdd.Count} playlists");
                         playlistsToAdd.Clear();
@@ -508,6 +521,19 @@ namespace vue_spotify_app.Server
             if (playlistsToAdd.Count > 0)
             {
                 _dataContext.Playlists.AddRange(playlistsToAdd);
+                foreach (var item in playlistsToAdd)
+                {
+                    var trackList = new TrackList
+                    {
+                        ID = Guid.NewGuid(),
+                        Name = item.Name,
+                        SortName = RegexHelpers.GenerateSortName(item.Name),
+                        TrackListType = TrackListType.Playlist,
+                        UserID = item.OwnerID,
+                        PlaylistID = item.ID
+                    };
+                    await _dataContext.TrackLists.AddAsync(trackList);
+                }
                 Debug.WriteLine($"Added ${playlistsToAdd.Count} playlists");
                 playlistsToAdd.Clear();
             }

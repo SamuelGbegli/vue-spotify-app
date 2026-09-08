@@ -368,7 +368,7 @@ namespace vue_spotify_app.Server
                                           URI = t.SpotifyURI,
                                           ExternalURL = t.ExternalURL,
                                           AlbumName = t.Album.Name,
-                                          AlbumCover = t.Album.AlbumCover?.Link,
+                                          AlbumCover = t.Album.AlbumCover.Link,
                                           AlbumURI = t.Album.SpotifyURI,
                                           AlbumExternalURL = t.Album.ExternalURL,
                                           Length = t.Length,
@@ -417,12 +417,13 @@ namespace vue_spotify_app.Server
 
             var user = await _dataContext.Users.Include(u => u.SpotifyToken).FirstOrDefaultAsync(u => u.ID == userID, cancellationToken);
             if (user == null || user.SpotifyToken == null) return;
-            foreach (var track in await _dataContext.TrackRecords.Where(t => t.PlaylistID == null).ToListAsync())
+            var likedSongsList = await _dataContext.TrackLists.FirstOrDefaultAsync(l => l.UserID == user.SpotifyUserID && l.TrackListType == TrackListType.LikedSongs, cancellationToken);
+            foreach (var track in await _dataContext.TrackRecords.Where(t => t.TrackListID == likedSongsList.ID).ToListAsync())
             {
                 var isInLikedSongs = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/tracks/contains?ids={track.SpotifyID}");
                 if (isInLikedSongs.Length > 0 && !isInLikedSongs[0])
                 {
-                    var trackRecord = await _dataContext.TrackRecords.FirstOrDefaultAsync(r => r.SpotifyID == track.ID && r.PlaylistID == null);
+                    var trackRecord = await _dataContext.TrackRecords.FirstOrDefaultAsync(r => r.SpotifyID == track.SpotifyID && r.TrackListID == likedSongsList.ID, cancellationToken);
                     if (trackRecord != null)
                     {
                         _dataContext.TrackRecords.Remove(trackRecord);
@@ -441,165 +442,13 @@ namespace vue_spotify_app.Server
                 {
                     if (!item.track.is_local)
                     {
-                        if(await _dataContext.TrackRecords.CountAsync(r => r.UserId == user.SpotifyUserID && r.SpotifyID == item.track.id && r.PlaylistID == null) > 0)
+                        if(await _dataContext.TrackRecords.CountAsync(r => r.SpotifyID == item.track.id && r.TrackListID == likedSongsList.ID) > 0)
                         {
                             await _dataContext.SaveChangesAsync(cancellationToken);
                             return;
                         }
                         var track = await AddOrUpdateTrack(item.track);
-                        /*// Gets or creates artist entities for the track
-                        var trackArtists = new List<Classes.Artist>();
-                        foreach (var artist in item.track.artists)
-                        {
-                            // Check if artist already exists in the database
-                            Classes.Artist artistEntity;
-                            // If artist is not in the database, create a new entity
-                            if (!_dataContext.Artists.Any(a => a.ID == artist.id))
-                            {
-                                artistEntity = new Classes.Artist
-                                {
-                                    ID = artist.id,
-                                    Name = artist.name,
-                                    SortName = RegexHelpers.GenerateSortName(artist.name),
-                                    URI = artist.uri,
-                                    ExternalURL = artist.external_urls.spotify
-                                };
-                                _dataContext.Artists.Add(artistEntity);
-                            }
-                            // If artist exists, update details
-                            else
-                            {
-                                artistEntity = _dataContext.Artists.First(a => a.ID == artist.id);
-                                if (artistEntity.Name != artist.name)
-                                {
-                                    artistEntity.Name = artist.name;
-                                    artistEntity.SortName = RegexHelpers.GenerateSortName(artist.name);
-                                }
-                                artistEntity.URI = artist.uri;
-                                artistEntity.ExternalURL = artist.external_urls.spotify;
-                                //_dataContext.SaveChanges();
-                            }
-                            // Add artist entity to track's artist list
-                            trackArtists.Add(artistEntity);
-                        }
-                        // Gets or creates album entity for the track
-                        var albumArtists = new List<Classes.Artist>();
-                        foreach (var artist in item.track.album.artists)
-                        {
-                            Classes.Artist artistEntity;
-                            // Check if artist is in the track artists list first
-                            if (trackArtists.Any(a => a.ID == artist.id))
-                            {
-                                artistEntity = trackArtists.First(a => a.ID == artist.id);
-                            }
-                            else if (!_dataContext.Artists.Any(a => a.ID == artist.id))
-                            {
-                                artistEntity = new Classes.Artist
-                                {
-                                    ID = artist.id,
-                                    Name = artist.name,
-                                    SortName = RegexHelpers.GenerateSortName(artist.name),
-                                    URI = artist.uri,
-                                    ExternalURL = artist.external_urls.spotify
-                                };
-                                _dataContext.Artists.Add(artistEntity);
-                                //_dataContext.SaveChanges();
-                            }
-                            else
-                            {
-                                artistEntity = _dataContext.Artists.First(a => a.ID == artist.id);
-                                if (artistEntity.Name != artist.name)
-                                {
-                                    artistEntity.Name = artist.name;
-                                    artistEntity.SortName = RegexHelpers.GenerateSortName(artist.name);
-                                }
-                                artistEntity.URI = artist.uri;
-                                artistEntity.ExternalURL = artist.external_urls.spotify;
-                            }
-                            albumArtists.Add(artistEntity);
-                        }
-                        // Check if album exists in the database
-                        var album = item.track.album;
-                        Classes.Album albumEntity;
-                        if (album != null && !_dataContext.Albums.Any(a => a.ID == album.id))
-                        {
-                            albumEntity = new Classes.Album
-                            {
-                                ID = album.id,
-                                Name = album.name,
-                                SortName = RegexHelpers.GenerateSortName(album.name),
-                                ReleaseDate = album.release_date,
-                                NumberOfTracks = album.total_tracks,
-                                Artists = albumArtists,
-                                SpotifyURI = album.uri,
-                                ExternalURL = album.external_urls.spotify
-                            };
-                            albumEntity.AlbumCover = new Classes.AlbumCover
-                            {
-                                Height = (int)album.images[0].height,
-                                Width = (int)album.images[0].width,
-                                Link = album.images[0].url
-                            };
-                        }
-                        else
-                        {
-                            albumEntity = _dataContext.Albums.First(a => a.ID == album.id);
-                            if (albumEntity.Name != album.name)
-                            {
-                                albumEntity.Name = album.name;
-                                albumEntity.SortName = RegexHelpers.GenerateSortName(album.name);
-                            }
-                            albumEntity.ReleaseDate = album.release_date;
-                            albumEntity.NumberOfTracks = album.total_tracks;
-                            albumEntity.SpotifyURI = album.uri;
-                            albumEntity.ExternalURL = album.external_urls.spotify;
-                        }
-                        // Check if track exists in the database
-                        var track = item.track;
-                        if (!_dataContext.Tracks.Any(t => t.ID == track.id))
-                        {
-                            var newTrack = new Classes.Track
-                            {
-                                ID = track.id,
-                                Name = track.name,
-                                SortName = RegexHelpers.GenerateSortName(track.name),
-                                AlbumID = track.album.id,
-                                Album = albumEntity,
-                                Artists = trackArtists,
-                                SpotifyURI = track.uri,
-                                ExternalURL = track.external_urls.spotify,
-                                Length = track.duration_ms,
-                                Explicit = track.@explicit,
-                                ISRC = track.external_ids?.isrc
-                            };
-                            _dataContext.Tracks.Add(newTrack);
-                        }
-                        else
-                        {
-                            var existingTrack = _dataContext.Tracks.Include(t => t.Artists).First(t => t.ID == track.id);
-                            if (existingTrack.Name != track.name)
-                            {
-                                existingTrack.Name = track.name;
-                                existingTrack.SortName = RegexHelpers.GenerateSortName(track.name);
-                            }
-                            existingTrack.AlbumID = track.album.id;
-                            existingTrack.SpotifyURI = track.uri;
-                            existingTrack.ExternalURL = track.external_urls.spotify;
-                            existingTrack.Length = track.duration_ms;
-                            existingTrack.Explicit = track.@explicit;
-                            existingTrack.Album = _dataContext.Albums.First(a => a.ID == track.album.id);
-                            existingTrack.ISRC = track.external_ids?.isrc;
-
-                            foreach (var artist in trackArtists)
-                            {
-                                if (!existingTrack.Artists.Any(a => a.ID == artist.ID))
-                                    existingTrack.Artists.Add(artist);
-                            }
-
-                            var artistsToRemove = existingTrack.Artists.Where(a => !trackArtists.Any(ta => ta.ID == a.ID)).ToList();
-                            foreach (var r in artistsToRemove) existingTrack.Artists.Remove(r);
-                        }
-                       */
+                        
                         if (await _dataContext.Tracks.FindAsync(track.ID) == null)
                         {
                             await _dataContext.Tracks.AddAsync(track);
@@ -610,7 +459,8 @@ namespace vue_spotify_app.Server
                             {
                                 UserId = user.SpotifyUserID,
                                 SpotifyID = track.ID,
-                                DateAdded = DateTime.Parse(item.added_at)
+                                DateAdded = DateTime.Parse(item.added_at),
+                                TrackListID = likedSongsList.ID
                             };
                             await _dataContext.TrackRecords.AddAsync(trackRecord);
                         }
@@ -640,8 +490,8 @@ namespace vue_spotify_app.Server
         /// <summary>
         /// Returns information regarding a track in Spotify.
         /// </summary>
-        /// <param name="trackID">Ihe inputted track ID.</param>
-        /// <param name="userID">The ID of the user.</param>
+        /// <param name="id">Ihe inputted track ID.</param>
+        /// <param name="authToken">The authorisation token used to view track information.</param>
         /// <returns>A view model containing information about a track.</returns>
         /// <exception cref="Exception"></exception>
         public async Task<TrackViewModel?> GetTrack(Guid userID, string trackID)
@@ -684,47 +534,6 @@ namespace vue_spotify_app.Server
             }
         }
 
-        public async Task<(int, List<TrackViewModel>)> SearchForTracks(Guid userID, SearchDTO searchDTO)
-        {
-            var tracks = new List<TrackViewModel>();
-            var query = new StringBuilder();
-
-            if(!string.IsNullOrWhiteSpace(searchDTO.Artist)) query.Append($"artist:{searchDTO.Artist} ");
-            if(!string.IsNullOrWhiteSpace(searchDTO.Album)) query.Append($"album:{searchDTO.Album} ");
-            if(!string.IsNullOrWhiteSpace(searchDTO.Track)) query.Append($"track:{searchDTO.Track} ");
-            if(!string.IsNullOrWhiteSpace(searchDTO.Year)) query.Append($"year:{searchDTO.Year} ");
-            if(!string.IsNullOrWhiteSpace(searchDTO.ISRC)) query.Append($"isrc:{searchDTO.ISRC} ");
-            if(!string.IsNullOrWhiteSpace(searchDTO.Genre)) query.Append($"genre:{searchDTO.Genre} ");
-            query.Remove(query.Length - 1, 1);
-
-            var response = await _spotifyAPIWrapper.GetAsync<SearchQueryResult>(userID, $"search?q={query}&type=track&limit=10&offset={searchDTO.Offset}");
-
-            foreach (var item in response.Tracks.items)
-            {
-                var trackViewModel = new TrackViewModel
-                {
-                    Name = item.name,
-                    ExternalURL = item.external_urls.spotify,
-                    AlbumName = item.album.name,
-                    AlbumCover = item.album.images.FirstOrDefault(a => a.width == item.album.images.Max(i => i.width))?.url ?? "",
-                    AlbumExternalURL = item.album.external_urls.spotify,
-                    Length = item.duration_ms,
-                    ID = item.id,
-                };
-                foreach (var artist in item.artists)
-                {
-                    trackViewModel.Artists.Add(new ArtistViewModel
-                    {
-                        ID = artist.id,
-                        Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify,
-                        Index = item.artists.IndexOf(artist)
-                    });
-                }
-                tracks.Add(trackViewModel);
-            }
-            return (response.Tracks.total, tracks);
-        }
 
         public async Task<Classes.Track> AddOrUpdateTrack(Classes.APIData.Track track)
         {
@@ -816,13 +625,13 @@ namespace vue_spotify_app.Server
                     Artists = albumArtists,
                     SpotifyURI = album.uri,
                     ExternalURL = album.external_urls.spotify,
-                    AlbumType = album.type,
-                    AlbumCover = new Classes.AlbumCover
-                    {
-                        Height = (int)album.images[0].height,
-                        Width = (int)album.images[0].width,
-                        Link = album.images[0].url
-                    }
+                    AlbumType = album.type
+                };
+                albumEntity.AlbumCover = new Classes.AlbumCover
+                {
+                    Height = (int)album.images[0].height,
+                    Width = (int)album.images[0].width,
+                    Link = album.images[0].url
                 };
                 await _dataContext.Albums.AddAsync(albumEntity);
 
@@ -917,25 +726,6 @@ namespace vue_spotify_app.Server
         }
 
         /// <summary>
-        /// Function to update a track on Spotify with the latest information pulled via an API call.
-        /// </summary>
-        /// <param name="trackID">The ID of the track.</param>
-        public async Task SyncTrack(string trackID)
-        {
-            // Gets the first user from the database. This assumes the application is a single user application.
-            // If the application was expanded to include multiple users, this would likely pull an administrator account.
-            var user = await _dataContext.Users.FirstOrDefaultAsync();
-            // Makes an API call with the track ID.
-            var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
-            // If track exists, updates the track information in the database.
-            if (track != null)
-            {
-                await AddOrUpdateTrack(track);
-                await _dataContext.SaveChangesAsync();
-            }
-        }
-
-        /// <summary>
         /// Checks a list of Spotify track IDs and sees if they exist.
         /// </summary>
         /// <param name="userId"></param>
@@ -954,7 +744,26 @@ namespace vue_spotify_app.Server
                 }
             }
 
-                return tracks;
+            return tracks;
+        }
+
+        /// <summary>
+        /// Function to update a track on Spotify with the latest information pulled via an API call.
+        /// </summary>
+        /// <param name="trackID">The ID of the track.</param>
+        public async Task SyncTrack(string trackID)
+        {
+            // Gets the first user from the database. This assumes the application is a single user application.
+            // If the application was expanded to include multiple users, this would likely pull an administrator account.
+            var user = await _dataContext.Users.FirstOrDefaultAsync();
+            // Makes an API call with the track ID.
+            var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
+            // If track exists, updates the track information in the database.
+            if (track != null)
+            {
+                await AddOrUpdateTrack(track);
+                await _dataContext.SaveChangesAsync();
+            }
         }
     }
 }

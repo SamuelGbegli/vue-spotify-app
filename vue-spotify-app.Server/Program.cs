@@ -95,4 +95,6 @@ app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
 
+SeedTrackList.SeedTrackLists(app.Services.CreateScope().ServiceProvider.GetRequiredService<DataContext>());
+
 app.Run();

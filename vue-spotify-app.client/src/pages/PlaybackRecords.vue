@@ -405,27 +405,6 @@ import { useRoute, useRouter } from 'vue-router';
     router.push(`playbackrecords?${query.toString()}`);
   }
 
-  async function updateRecords() {
-    try {
-      Loading.show({
-        message: "Updating records..."
-      });
-      await axios.get("/api/playbackrecord/updaterecords", {
-        headers: {
-          authToken: authStore.accessToken
-        }
-      });
-      alert("Successfully updated database.");
-    }
-    catch (ex) {
-      const error = ex as AxiosError;
-      console.log(error)
-      alert("An error has occured.");
-    }
-    finally {
-      Loading.hide();
-    }
-  }
 
   // Function to get individual playback records from the API
   async function getRecords() {
