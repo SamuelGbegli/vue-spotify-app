@@ -252,7 +252,7 @@ const selectedItemTypes = ref<{label: string, value: string}[]>([]);
   async function onPageChange(props){
     const {page, rowsPerPage} = props.pagination;
     searchDto.value.offset = (page - 1) * 10;
-    await submit();
+    //await submit();
   }
 
   function openQueueDialog(track: TrackViewModel) {
