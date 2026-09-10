@@ -145,7 +145,8 @@ import SortType from '@/enumClasses/sortType';
   // Stores the ID of the playlist whose tracks are to be fetched. If null,
   // tracks from the Liked Songs library are fetched instead.
   const props = defineProps<{
-    playlistId?: string | null
+    playlistId?: string | null,
+    listId?: string | null
   }>()
 
   // The total tracks stored in the playlist or Liked Songs library.
@@ -328,6 +329,7 @@ import SortType from '@/enumClasses/sortType';
       console.log("page " + pagination.value.page);
       const query = new URLSearchParams();
       if (!!props.playlistId) query.append("playlistId", props.playlistId.toString());
+      if (!!props.listId) query.append("listId", props.listId.toString());
       if (batchIndexes != null) {
         batchIndexes.forEach(x =>{
           query.append("offset", x.toString());
@@ -474,7 +476,10 @@ import SortType from '@/enumClasses/sortType';
     if (filter.value.dateRangeTo != null) query.append("to", filter.value.dateRangeTo.toString())
     query.append("sort", filter.value.sortType.toString());
     query.append("order", filter.value.sortOrder.toString());
-    router.push(!!props.playlistId ? `/playlists/${props.playlistId}?${query.toString()}` : `/?${query.toString()}`);
+
+    if(!!props.playlistId) router.push(`/playlists/${props.playlistId}?${query.toString()}`);
+    else if (!!props.listId) router.push(`/tracklists/${props.listId}?${query.toString()}`);
+    else router.push(`/?${query.toString()}`);
     await getTracks(false, true);
   }
 

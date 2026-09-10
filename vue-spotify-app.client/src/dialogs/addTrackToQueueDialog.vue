@@ -1,57 +1,57 @@
 <template>
     <QDialog class="relative-position" ref="dialogRef" backdrop-filter="blur(4px)" persistent>
       <QCard>
-        <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">          
-            <QCardSection class="row items-center q-pb-none">
-              <div class="text-h6">Adding {{ tracks.length }} {{ tracks.length != 1 ? "tracks" : "track" }} to queue</div>
-              <QSpace/>
-              <QBtn icon="close" flat dense round v-close-popup />
-            </QCardSection>
+        <QCardSection class="row items-center q-pb-none">
+            <div class="text-h6">Adding {{ tracks.length }} {{ tracks.length != 1 ? "tracks" : "track" }} to queue</div>
+            <QSpace/>
+            <QBtn icon="close" flat dense round v-close-popup />
+          </QCardSection>
+        <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">                 
             <QCardSection>
-          <QTable v-if="props.tracks.length > 1"
-            :columns="tableColumns"
-            :rows="tracks"
-            row-key="id"
-            wrap-cells
-            flat>
-            <template v-slot:body-cell-albumCover="props">
-              <QTd :props="props">
-                <QImg :src="props.row.albumCover"
-                      :alt="`Album cover for ${props.row.albumName} by ${props.row.artists.map((x) => x.name).join(', ')}`"
-                      width="48px" />
-              </QTd>
-            </template>
-            <template v-slot:body-cell-name="props">
-              <QTd :props="props">
-                <div>
-                  <a :href="props.row.externalURL">{{ props.row.name }}</a>
-                </div>
-              </QTd>
-            </template>
-            <template v-slot:body-cell-artists="props">
-              <QTd :props="props">
-                <div class="text-left">
-                  <span v-for="x in props.row.artists" :key="x.id" :href="x.externalURL"><a :href="x.externalURL">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
-                </div>
-              </QTd>
-            </template>
-            <template v-slot:body-cell-albumName="props">
-              <QTd :props="props">
-                <div class="text-left">
-                  <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
-                </div>
-              </QTd>
-            </template>
-            <template v-slot:body-cell-length="props">
-              <QTd :props="props">
-                <div class="text-left">
-                  {{ ConvertMilisecondsToMinutesAndSeconds(props.row.length) }}
-                </div>
-              </QTd>
-            </template>
-          </QTable>
-          <TrackPreviewCard v-else :track="props.tracks[0]" :showLikedSongs="false"/>
-        </QCardSection>
+              <QTable v-if="props.tracks.length > 1"
+                :columns="tableColumns"
+                :rows="tracks"
+                row-key="id"
+                wrap-cells
+                flat>
+                <template v-slot:body-cell-albumCover="props">
+                  <QTd :props="props">
+                    <QImg :src="props.row.albumCover"
+                          :alt="`Album cover for ${props.row.albumName} by ${props.row.artists.map((x) => x.name).join(', ')}`"
+                          width="48px" />
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-name="props">
+                  <QTd :props="props">
+                    <div>
+                      <a :href="props.row.externalURL">{{ props.row.name }}</a>
+                    </div>
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-artists="props">
+                  <QTd :props="props">
+                    <div class="text-left">
+                      <span v-for="x in props.row.artists" :key="x.id" :href="x.externalURL"><a :href="x.externalURL">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
+                    </div>
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-albumName="props">
+                  <QTd :props="props">
+                    <div class="text-left">
+                      <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
+                    </div>
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-length="props">
+                  <QTd :props="props">
+                    <div class="text-left">
+                      {{ ConvertMilisecondsToMinutesAndSeconds(props.row.length) }}
+                    </div>
+                  </QTd>
+                </template>
+              </QTable>
+            <TrackPreviewCard v-else :track="props.tracks[0]" :showLikedSongs="false"/>
+          </QCardSection>
         <QCardSection>
           <QSelect
             v-model="selectedDevice"
@@ -182,7 +182,6 @@ import TrackPreviewCard from '@/components/TrackPreviewCard.vue';
 
 const {dialogRef, onDialogOK, onDialogCancel} = useDialogPluginComponent();
 
-// TODO: Add onOK function
 async function onOK(){
   Loading.show({
     message: "Adding tracks to queue..."
@@ -205,7 +204,7 @@ async function onOK(){
         message: `Error adding tracks to queue.`,
         color: "red"
       });
-    return;
+    //return;
   }
   finally{
     Loading.hide();

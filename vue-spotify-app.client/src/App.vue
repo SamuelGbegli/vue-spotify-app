@@ -96,9 +96,9 @@
                 Search
               </QItemSection>
             </QItem>
-            <QItem clickable to="/savedtracks">
+            <QItem clickable to="/tracklists">
               <QItemSection>
-                Saved Tracks
+                Track Lists
               </QItemSection>
             </QItem>
             <QItem clickable @click="logoutClick()">

@@ -8,11 +8,12 @@ import PlaybackRecords from '@/pages/PlaybackRecords.vue'
 import PlaylistPage from '@/pages/PlaylistPage.vue'
 import ReviewPendingPlaybackRecords from '@/pages/ReviewPendingPlaybackRecords.vue'
 import SearchPage from '@/pages/SearchPage.vue'
-import SavedTracksPage from '@/pages/SavedTracksPage.vue'
+import TrackListPage from '@/pages/TrackListPage.vue'
 import SearchTracks from '@/pages/SearchTracks.vue'
 import ViewPlaylistPage from '@/pages/ViewPlaylistPage.vue'
 import ViewTrackPage from '@/pages/ViewTrackPage.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import ViewTrackListPage from '@/pages/ViewTrackListPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -82,11 +83,12 @@ const router = createRouter({
       }
     },
     {
-      path: "/savedtracks",
-      component: SavedTracksPage,
-      meta: {
-        title: "Saved Tracks",
-      }
+      path: "/tracklists",
+      component: TrackListPage
+    },
+    {
+      path: "/tracklists/:id",
+      component: ViewTrackListPage
     },
     {
       path: '/:pathMatch(.*)*',

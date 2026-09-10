@@ -196,14 +196,14 @@ namespace vue_spotify_app.Server
         //    return (total, batches);
         //}
 
-        public async Task<(int, List<TrackViewModelBatch>)> GetTracksNew(string spotifyUserID, TrackFilter filter, List<int> offsets, string? playlistId = null, int numberOfTracks = 50)
+        public async Task<(int, List<TrackViewModelBatch>)> GetTracksNew(string spotifyUserID, TrackFilter filter, List<int> offsets, Guid listID, int numberOfTracks = 50)
         {
             var query =
                 from tr in _dataContext.TrackRecords
                 join t in _dataContext.Tracks
                     on tr.SpotifyID equals t.ID
                 where tr.UserId == spotifyUserID
-                    && tr.PlaylistID == playlistId
+                    && tr.TrackListID == listID
                 select new
                 {
                     TrackID = t.ID,
@@ -234,6 +234,7 @@ namespace vue_spotify_app.Server
                 where tr.UserId == spotifyUserID
                     && tr.PlaylistID == null
                 select t.AliasID;
+
 
             var batches = new List<TrackViewModelBatch>();
 
@@ -496,6 +497,9 @@ namespace vue_spotify_app.Server
         /// <exception cref="Exception"></exception>
         public async Task<TrackViewModel?> GetTrack(Guid userID, string trackID)
         {
+            var user = await _dataContext.Users.FindAsync(userID);
+            var likedSongsList = await _dataContext.TrackLists.FirstOrDefaultAsync(tl => tl.TrackListType == TrackListType.LikedSongs && tl.UserID == user.SpotifyUserID);
+            if (likedSongsList == null) throw new Exception("Liked Songs list does not exist for user");
             try
             {
                 var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(userID, $"tracks/{trackID}");
@@ -520,7 +524,7 @@ namespace vue_spotify_app.Server
                         Index = track.artists.IndexOf(artist)
                     });
                 }
-                var likedSongTrack = await _dataContext.TrackRecords.FirstOrDefaultAsync(x => x.SpotifyID == trackID && x.PlaylistID == null);
+                var likedSongTrack = await _dataContext.TrackRecords.FirstOrDefaultAsync(x => x.SpotifyID == trackID && x.TrackListID == likedSongsList.ID);
                 if (likedSongTrack != null)
                 {
                     viewModel.DateSaved = likedSongTrack.DateAdded;

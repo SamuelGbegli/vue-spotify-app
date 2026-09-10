@@ -38,6 +38,7 @@ builder.Services.AddScoped<PlaybackQueueService>();
 builder.Services.AddScoped<TrackAliasService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<SavedTrackService>();
+builder.Services.AddScoped<TrackListService>();
 
 builder.Services.AddHostedService<SyncPlaybackRecordService>();
 builder.Services.AddHostedService<SyncLikedSongsLibraryService>();
@@ -94,7 +95,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
-
-SeedTrackList.SeedTrackLists(app.Services.CreateScope().ServiceProvider.GetRequiredService<DataContext>());
 
 app.Run();

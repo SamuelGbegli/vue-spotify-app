@@ -23,60 +23,6 @@ namespace vue_spotify_app.Server
             _spotifyAPIWrapper = spotifyAPIWrapper;
         }
 
-        // TODO: remove
-        public async Task<List<PlaylistViewModel>> GetPlaylists(string authToken, int offset, int numberOfPlaylists)
-        {
-            var viewModels = new List<PlaylistViewModel>();
-
-            // Sets up HTTP Client
-            HttpClient client = new HttpClient();
-            // Adds JSON header to client
-            client.DefaultRequestHeaders.Accept.Add(
-                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            // Adds Spotify auth token to header
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
-
-            // Makes call to API
-
-            // Gets ID of user
-            HttpResponseMessage userMessage = client.GetAsync("https://api.spotify.com/v1/me").Result;
-            string userId = "";
-            if (userMessage.IsSuccessStatusCode)
-            {
-                using var contentStream = userMessage.Content.ReadAsStream();
-                var user = System.Text.Json.JsonSerializer.Deserialize<Classes.APIData.UserProfile>(contentStream);
-                userId = user.id;
-            }
-
-            HttpResponseMessage responseMessage = await client.GetAsync($"https://api.spotify.com/v1/me/playlists?offset={offset}&limit={numberOfPlaylists}");
-            if (responseMessage.IsSuccessStatusCode)
-            {
-                using var contentStream = responseMessage.Content.ReadAsStream();
-
-                // Deserialize JSON response to object
-                var playlists = System.Text.Json.JsonSerializer.Deserialize<Classes.APIData.PlaylistResponse>(contentStream);
-
-                foreach (var playlist in playlists.items)
-                {
-                    var viewModel = new PlaylistViewModel
-                    {
-                        ID = playlist.id,
-                        Name = playlist.name,
-                        Description = playlist.description,
-                        NumberOfTracks = playlist.items.total,
-                        OwnerName = playlist.owner.display_name,
-                        OwnerLink = playlist.owner.external_urls.spotify,
-                        ExternalURL = playlist.external_urls.spotify
-                    };
-
-                    if (playlist.images?.Any() == true && !playlist.images.IsNullOrEmpty())
-                        viewModel.ImageLink = playlist.images.First(x => x.width == playlist.images.Max(y => y.width)).url;
-                    viewModels.Add(viewModel);
-                }
-            }
-            return viewModels;
-        }
-
         // TODO: refactor to cache playlists in database and only call API to update playlists that have been modified since last fetch
         public async Task<(int, List<PlaylistViewModel>)> GetPlaylists(User user, int offset, int numberOfPlaylists, bool getUserEditablePlaylists = false)
         {
@@ -106,33 +52,6 @@ namespace vue_spotify_app.Server
             return (totalPlaylists, viewModels);
         }
 
-        // TODO: remove
-        public async Task<int> GetNumberOfPlaylists(string authToken)
-        {
-            int numberOfPlaylists = 0;
-
-            // Sets up HTTP Client
-            HttpClient client = new HttpClient();
-            // Adds JSON header to client
-            client.DefaultRequestHeaders.Accept.Add(
-                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            // Adds Spotify auth token to header
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
-
-            // Makes call to API
-
-            HttpResponseMessage responseMessage = await client.GetAsync("https://api.spotify.com/v1/me/playlists?");
-            if (responseMessage.IsSuccessStatusCode)
-            {
-                using var contentStream = responseMessage.Content.ReadAsStream();
-
-                // Deserialize JSON response to object
-                var playlists = System.Text.Json.JsonSerializer.Deserialize<Classes.APIData.PlaylistResponse>(contentStream);
-
-                numberOfPlaylists = playlists.total;
-            }
-            return numberOfPlaylists;
-        }
 
         // TODO: Update to use cached playlist
         public async Task<PlaylistViewModel?> GetPlaylist(Guid userID, string playlistId)
@@ -285,85 +204,8 @@ namespace vue_spotify_app.Server
             return trackViewModels;
         }
 
-        //// TODO: 
-        //public async Task InitialisePlaylist(string authToken, int offset, int numberOfPlaylists)
-        //{
 
-        //    // Sets up HTTP Client
-        //    HttpClient client = new HttpClient();
-        //    // Adds JSON header to client
-        //    client.DefaultRequestHeaders.Accept.Add(
-        //        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-        //    // Adds Spotify auth token to header
-        //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
-
-        //    // Makes call to API
-
-        //    // Gets ID of user
-
-        //    HttpStatusCode apiStatusCode = 0;
-        //    string userId = "";
-        //    while (apiStatusCode != HttpStatusCode.OK)
-        //    {
-        //        HttpResponseMessage userMessage = client.GetAsync("https://api.spotify.com/v1/me").Result;
-        //        apiStatusCode = userMessage.StatusCode;
-        //        if (userMessage.IsSuccessStatusCode)
-        //        {
-        //            using var contentStream = userMessage.Content.ReadAsStream();
-        //            var user = System.Text.Json.JsonSerializer.Deserialize<Classes.APIData.UserProfile>(contentStream);
-        //            userId = user.id;
-        //        }
-        //        else if (apiStatusCode == HttpStatusCode.TooManyRequests)
-        //        {
-        //            var retryAfter = userMessage.Headers.RetryAfter?.Delta?.TotalSeconds ?? 1;
-        //            Thread.Sleep((int)(retryAfter * 1000));
-        //        }
-        //        else
-        //        {
-        //            throw new Exception("Could not get user details. Token is likely expired.");
-        //        }
-        //    }
-
-        //    var apiUrl = $"https://api.spotify.com/v1/me/playlists?offset={offset}&limit={numberOfPlaylists}";
-
-        //    while (apiUrl != null)
-        //    {
-        //        apiStatusCode = 0;
-        //        while (apiStatusCode != HttpStatusCode.OK)
-        //        {
-        //            HttpResponseMessage responseMessage = await client.GetAsync(apiUrl);
-        //            apiStatusCode = responseMessage.StatusCode;
-        //            if (responseMessage.IsSuccessStatusCode)
-        //            {
-        //                using var contentStream = responseMessage.Content.ReadAsStream();
-
-        //                // Deserialize JSON response to object
-        //                var playlists = System.Text.Json.JsonSerializer.Deserialize<Classes.APIData.PlaylistResponse>(contentStream);
-
-        //                foreach (var playlist in playlists.items)
-        //                {
-        //                    if (playlist.owner.id == userId)
-        //                        await InitialisePlaylistTracks(playlist.id, authToken);
-        //                }
-
-        //                apiUrl = playlists.next;
-        //            }
-        //            else if(apiStatusCode == HttpStatusCode.TooManyRequests)
-        //            {
-        //                var retryAfter = responseMessage.Headers.RetryAfter?.Delta?.TotalSeconds ?? 1;
-        //                Thread.Sleep((int)(retryAfter * 1000));
-        //            }
-        //            else
-        //            {
-        //                throw new Exception("Could not get playlists. Token is likely expired.");
-        //            }
-        //        }
-        //    }
-
-            
-        //}
-
-       public async Task InitialisePlaylistTracks(Guid userID)
+        public async Task InitialisePlaylistTracks(Guid userID)
         {
             const int bufferSize = 50;
             List<Classes.Track> tracksToAdd = new List<Classes.Track>(50);
@@ -372,6 +214,8 @@ namespace vue_spotify_app.Server
             var playlists = await _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID.ToString()).ToListAsync();
             foreach (var playlist in playlists)
             {
+
+                var playlistTrackList = await _dataContext.TrackLists.FirstOrDefaultAsync(l => l.TrackListType == TrackListType.Playlist && l.PlaylistID == playlist.ID);
                 var endpoint = $"playlists/{playlist.ID}/tracks?offset=0&limit=50";
                 while(endpoint != null)
                 {
@@ -395,6 +239,7 @@ namespace vue_spotify_app.Server
                                     UserId = item.added_by.id,
                                     SpotifyID = item.track.id,
                                     PlaylistID = playlist.ID,
+                                    TrackListID = playlistTrackList.ID,
                                     DateAdded = DateTime.Parse(item.added_at)
                                 });
                                 if (tracksToAdd.Count >= bufferSize)
@@ -426,11 +271,7 @@ namespace vue_spotify_app.Server
                 }
             }
         }
-   
-        public async Task<int> GetNumberOfTrackPlaylists(string trackId)
-        {
-            return await _dataContext.TrackRecords.CountAsync(r => r.SpotifyID == trackId && r.PlaylistID != null);
-        }
+
 
         public async Task<(int, List<TrackPlaylistViewModel>)> GetPlaylistsPerTrack(User user, string trackID, int offset = 0, int numberOfPlaylists = 1)
         {

@@ -73,6 +73,7 @@ namespace vue_spotify_app.Server.Controllers
         public async Task<IActionResult> GetTracks(
             [FromQuery] List<int> offset,
             [FromQuery] string? playlistId = null,
+            [FromQuery] Guid? listId = null,
             [FromQuery] string query = "",
             [FromQuery] bool searchName = true,
             [FromQuery] bool searchArtist = true,
@@ -102,9 +103,30 @@ namespace vue_spotify_app.Server.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
+                if (listId == null)
+                {
+                    if (playlistId != null)
+                    {
+                        var trackList = await _dataContext.TrackLists.FirstOrDefaultAsync(tl => tl.PlaylistID == playlistId && tl.UserID == user.SpotifyUserID);
+                        if (trackList != null)
+                        {
+                            listId = trackList.ID;
+                        }
+                        else
+                        {
+                            return BadRequest("Playlist not found for the user.");
+                        }
+                    }
+                    else
+                    {
+                        var trackList = await _dataContext.TrackLists.FirstOrDefaultAsync(tl => tl.TrackListType == TrackListType.LikedSongs && tl.UserID == user.SpotifyUserID);
+                        listId = trackList?.ID;
+                    }
+
+                }
                 var data = await _trackService.GetTracksNew(
                     spotifyUserID: user.SpotifyUserID,
-                     playlistId: playlistId,
+                     listID: listId.Value,
                      filter: filter,
                      offsets: offset,
                      numberOfTracks: numberOfTracks);
