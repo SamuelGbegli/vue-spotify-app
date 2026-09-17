@@ -20,6 +20,7 @@ builder.Services.AddDbContextPool<DataContext>(options =>
     var databaseContext = builder.Configuration["ConnectionStrings:DatabaseContext"];
     options.UseSqlServer(databaseContext ?? throw new InvalidOperationException("Connection string 'DatabaseContext' not found."));
     options.EnableSensitiveDataLogging();
+    options.LogTo(Console.WriteLine, LogLevel.Information);
 
 }, poolSize: 32);
 
@@ -35,12 +36,16 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SpotifyAPIWrapper>();
 builder.Services.AddScoped<PlaybackQueueService>();
 builder.Services.AddScoped<TrackAliasService>();
+builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<SavedTrackService>();
+builder.Services.AddScoped<TrackListService>();
 
 builder.Services.AddHostedService<SyncPlaybackRecordService>();
 builder.Services.AddHostedService<SyncLikedSongsLibraryService>();
 builder.Services.AddHostedService<SyncTracksWithPlaybackHistoryService>();
-builder.Services.AddHostedService<SyncPlaylistService>();
+//builder.Services.AddHostedService<SyncPlaylistService>();
 builder.Services.AddHostedService<SyncTrackAliasService>();
+builder.Services.AddHostedService<SyncTracksService>();
 
 builder.Services.Configure<SpotifyOptions>(builder.Configuration.GetSection("Spotify"));
 builder.Services.AddHttpContextAccessor();

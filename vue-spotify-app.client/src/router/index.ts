@@ -7,14 +7,16 @@ import NotFound from '@/pages/NotFound.vue'
 import PlaybackRecords from '@/pages/PlaybackRecords.vue'
 import PlaylistPage from '@/pages/PlaylistPage.vue'
 import ReviewPendingPlaybackRecords from '@/pages/ReviewPendingPlaybackRecords.vue'
+import SearchPage from '@/pages/SearchPage.vue'
+import TrackListPage from '@/pages/TrackListPage.vue'
 import SearchTracks from '@/pages/SearchTracks.vue'
-import TestNewTrackObject from '@/pages/TestNewTrackObject.vue'
 import ViewPlaylistPage from '@/pages/ViewPlaylistPage.vue'
 import ViewTrackPage from '@/pages/ViewTrackPage.vue'
-import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
+import ViewTrackListPage from '@/pages/ViewTrackListPage.vue'
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',
@@ -38,15 +40,24 @@ const router = createRouter({
     },
     {
       path: "/playbackrecords",
-      component: PlaybackRecords
+      component: PlaybackRecords,
+      meta: {
+        title: "Playback Records",
+      }
     },
     {
       path: "/addtoqueue",
-      component: AddTrackToQueue
+      component: AddTrackToQueue,
+      meta: {
+        title: "Add track to queue",
+      }
     },
     {
       path: "/playlists",
-      component: PlaylistPage
+      component: PlaylistPage,
+      meta: {
+        title: "Playlists",
+      }
     },
     {
       path: "/playlists/:id",
@@ -65,8 +76,26 @@ const router = createRouter({
       component: ViewTrackPage
     },
     {
+      path: "/search",
+      component: SearchPage,
+      meta: {
+        title: "Search",
+      }
+    },
+    {
+      path: "/tracklists",
+      component: TrackListPage
+    },
+    {
+      path: "/tracklists/:id",
+      component: ViewTrackListPage
+    },
+    {
       path: '/:pathMatch(.*)*',
       component: NotFound,
+      meta: {
+        title: "Page Not Found",
+      }
     },
   ],
 })

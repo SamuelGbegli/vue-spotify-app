@@ -27,12 +27,20 @@ namespace vue_spotify_app.Classes
         /// </summary>
         public DateTime DateAdded { get; set; }
         /// <summary>
-        /// The ID of the playlist the track is saved in. Null if saved to library.
+        /// The ID of the playlist the track is saved in. Null if saved to Liked Songs.
         /// </summary>
         public string? PlaylistID { get; set; }
         /// <summary>
-        /// The ID of the user that saved the track to their library or playlist.
+        /// The ID of the user that saved the track.
         /// </summary>
         public string UserId { get; set; }
+        /// <summary>
+        /// The ID of the list the track is saved to.
+        /// </summary>
+        public Guid? TrackListID { get; set; }
+        /// <summary>
+        /// The list the track is saved to.
+        /// </summary>
+        public TrackList? TrackList { get; set; }
     }
 }

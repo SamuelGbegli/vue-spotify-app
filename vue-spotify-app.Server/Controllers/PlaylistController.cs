@@ -2,12 +2,13 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using vue_spotify_app.Classes;
 using vue_spotify_app.Server.Data;
 
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class PlaylistController : ControllerBase
     {
         private readonly PlaylistService _playlistService;
@@ -21,14 +22,14 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("getplaylists")]
-        public async Task<IActionResult> GetPlaylists([FromHeader] string authToken, int offset = 0, int numberOfPlaylists = 0)
+        public async Task<IActionResult> GetPlaylists([FromQuery]int offset = 0, [FromQuery]int numberOfPlaylists = 0)
         {
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _playlistService.GetPlaylists(user.ID, offset, numberOfPlaylists);
+                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists);
 
                 return Ok(new
                 {
@@ -78,16 +79,17 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("gettrackplaylists")]
-        public async Task<IActionResult> GetTrackPlaylists([FromHeader] string authToken, [FromQuery] string trackId, [FromQuery] int offset = 0, [FromQuery] int numberOfPlaylists = 10)
+        public async Task<IActionResult> GetTrackPlaylists([FromQuery] string trackId, [FromQuery] int offset = 0, [FromQuery] int numberOfPlaylists = 10)
         {
             try
             {
-                var totalPlaylists = await _playlistService.GetNumberOfTrackPlaylists(trackId);
-                var playlists = await _playlistService.GetPlaylistsPerTrack(trackId, authToken, offset, numberOfPlaylists);
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var data = await _playlistService.GetPlaylistsPerTrack(user, trackId, offset, numberOfPlaylists);
                 return Ok(new
                 {
-                    totalPlaylists,
-                    playlists
+                    totalPlaylists = data.Item1,
+                    playlists = data.Item2
                 });
             }
             catch (Exception ex)
@@ -114,5 +116,27 @@ namespace vue_spotify_app.Server.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-    }
+
+        [HttpPost]
+        [Route("addtoplaylist")]
+        public async Task<IActionResult> AddToPlaylist([FromBody] AddToPlaylistDTO addToPlaylistDTO)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+
+                for (int i = 0; i < addToPlaylistDTO.TrackIDs.Count; i += 100)
+                {
+                    var batch = addToPlaylistDTO.TrackIDs.Skip(i).Take(100).ToList();
+                    await _playlistService.AddItemsToPlaylist(user.ID, addToPlaylistDTO.PlaylistID, batch);
+                }
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+        }
 }

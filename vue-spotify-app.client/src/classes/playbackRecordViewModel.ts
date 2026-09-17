@@ -34,7 +34,7 @@ export default class PlaybackRecordViewModel{
     data.artists.forEach(element => {
       const artist = new Artist();
       artist.name = element.name;
-      artist.externalUrl = element.externalURL;
+      artist.externalURL = element.externalURL;
       this.artists.push(artist);
     });
   }

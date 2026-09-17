@@ -8,12 +8,12 @@ export default class Artist {
     // Spotify's internal URI for the artist's profile
     uri: string = "";
     // An external link to the artist's Spotify profile
-    externalUrl: string = "";
+    externalURL: string = "";
 
     setArtistInformation(data){
         this.id = data.id;
         this.name = data.name;
         this.uri = data.uri;
-        this.externalUrl = data.external_urls.spotify
+        this.externalURL = data.external_urls.spotify
     }
 }

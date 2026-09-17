@@ -103,7 +103,7 @@ async function getRecords() {
   statusCode.value = null;
   try{
     const response = await axios.get(
-      `playbackrecord/getpendingrecords?page=${currentPage.value}`, {
+      `/api/playbackrecord/getpendingrecords?page=${currentPage.value}`, {
         headers: { authToken: authStore.accessToken}
       }
     );
@@ -161,7 +161,7 @@ async function getRecords() {
       message: "Please wait..."
     });
     try {
-      await axios.post("playbackrecord/pushpendingrecords", ids);
+      await axios.post("/api/playbackrecord/pushpendingrecords", ids);
       alert(`Successfully pushed ${ids.length} records.`)
       if(currentPage.value > Math.ceil((totalRecords.value - ids.length) / 50))
         currentPage.value -= 1;

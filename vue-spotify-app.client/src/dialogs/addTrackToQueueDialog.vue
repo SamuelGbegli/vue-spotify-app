@@ -1,10 +1,58 @@
 <template>
-  <QDialog class="relative-position" ref="dialogRef" backdrop-filter="blur(4px)">
+    <QDialog class="relative-position" ref="dialogRef" backdrop-filter="blur(4px)" persistent>
       <QCard>
-        <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">
-          <QCardSection>
-          <div class="text-h6">Adding {{ name }} to queue</div>
-
+        <QCardSection class="row items-center q-pb-none">
+            <div class="text-h6">Adding {{ tracks.length }} {{ tracks.length != 1 ? "tracks" : "track" }} to queue</div>
+            <QSpace/>
+            <QBtn icon="close" flat dense round v-close-popup />
+          </QCardSection>
+        <div v-if="deviceStatusCode === 200 && availableDevices.length > 0">                 
+            <QCardSection>
+              <QTable v-if="props.tracks.length > 1"
+                :columns="tableColumns"
+                :rows="tracks"
+                row-key="id"
+                wrap-cells
+                flat>
+                <template v-slot:body-cell-albumCover="props">
+                  <QTd :props="props">
+                    <QImg :src="props.row.albumCover"
+                          :alt="`Album cover for ${props.row.albumName} by ${props.row.artists.map((x) => x.name).join(', ')}`"
+                          width="48px" />
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-name="props">
+                  <QTd :props="props">
+                    <div>
+                      <a :href="props.row.externalURL">{{ props.row.name }}</a>
+                    </div>
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-artists="props">
+                  <QTd :props="props">
+                    <div class="text-left">
+                      <span v-for="x in props.row.artists" :key="x.id" :href="x.externalURL"><a :href="x.externalURL">{{ x.name }}</a><span v-if="props.row.artists.indexOf(x) < props.row.artists.length - 1">, </span></span>
+                    </div>
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-albumName="props">
+                  <QTd :props="props">
+                    <div class="text-left">
+                      <a :href="props.row.albumExternalURL">{{ props.row.albumName }}</a>
+                    </div>
+                  </QTd>
+                </template>
+                <template v-slot:body-cell-length="props">
+                  <QTd :props="props">
+                    <div class="text-left">
+                      {{ ConvertMilisecondsToMinutesAndSeconds(props.row.length) }}
+                    </div>
+                  </QTd>
+                </template>
+              </QTable>
+            <TrackPreviewCard v-else :track="props.tracks[0]" :showLikedSongs="false"/>
+          </QCardSection>
+        <QCardSection>
           <QSelect
             v-model="selectedDevice"
             :options="availableDevices"
@@ -18,13 +66,12 @@
         </QCardSection>
 
         <QCardActions align="right">
-          <QBtn flat label="Cancel" color="primary" @click="onDialogCancel" />
           <QBtn flat label="OK" color="primary" @click="onOK" />
         </QCardActions>
         </div>
     <div v-else-if="deviceStatusCode != null">
       <div>{{ deviceStatusCode === 200 ? 'No available devices were found.' : 'An error has occured.' }}</div>
-      <QBtn flat label="Close" color="primary" @click="onDialogCancel" />
+      <QBtn flat label="Retry" color="primary" @click="getAvailableDevices" />
     </div>
       <QInnerLoading :showing="deviceStatusCode === null">
       <div class="row items-center justify-center" style="height: 200px;">
@@ -32,40 +79,96 @@
       </div>
     </QInnerLoading>
     </QCard>
-  </QDialog>
-
+    </QDialog>
+        
 </template>
+
 <script setup lang="ts">
 
-import DeviceInfo from '@/classes/deviceInfo';
-import { useAuthStore } from '@/stores/authStore';
-import { biSpotify } from '@quasar/extras/bootstrap-icons';
-import axios, { AxiosError } from 'axios';
-import { Notify, useDialogPluginComponent } from 'quasar';
-import { onBeforeMount, ref } from 'vue';
+    import DeviceInfo from '@/classes/deviceInfo';
+    import TrackViewModel from '@/classes/trackViewModel';
+    import { onBeforeMount, ref } from 'vue';
+    import axios, { AxiosError } from 'axios';
+    import { Notify, Loading, useDialogPluginComponent } from 'quasar';
+import ConvertMilisecondsToMinutesAndSeconds from '@/helperFunctions/convertMilisecondsToMinutesAndSeconds';
+import TrackPreviewCard from '@/components/TrackPreviewCard.vue';
 
-const props = defineProps<{
-  trackId: string;
-  name: string;
-}>();
+    const props = defineProps<{
+      tracks: TrackViewModel[];
+    }>();
 
-  const authStore = useAuthStore();
-  const selectedDevice = ref<DeviceInfo | null | undefined>();
-  const availableDevices = ref<DeviceInfo[]>([]);
-  const deviceStatusCode = ref<number | null>(null);
+    // The device's queue that the track will be added to
+    const selectedDevice = ref<DeviceInfo | null | undefined>();
+    // A list of devices the user can select
+    const availableDevices = ref<DeviceInfo[]>([]);
+    // The status code of the available devices call
+    const deviceStatusCode = ref<number | null>(null);
 
-onBeforeMount( async () => {
-  await getAvailableDevices();
-});
+    const tableColumns = [
+        {
+            name: "order",
+            label: "#",
+            field: (row: TrackViewModel) => props.tracks.indexOf(row) + 1,
+            align: "left",
+            sortable: false
+        },
+        {
+      name: "albumCover",
+      label: "",
+      field: "albumCover",
+      align: "left",
+      sortable: false,
+      style: "width: auto"
+    },
+    // Shows the track's name.
+    {
+      name: "name",
+      label: "Name",
+      field: "name",
+      align: "left",
+      sortable: true,
+      style: "width: 20%"
+    },
+    // Shows the artists credited for the track.
+    {
+      name: "artists",
+      label: "Artist",
+      field: "artists",
+      align: "left",
+      style: "width: 200px",
+      sortable: true
+    },
+    // Shows the name of the album the track comes from.
+    {
+      name: "albumName",
+      label: "Album",
+      field: "albumName",
+      align: "left",
+      style: "width: 200px",
+      sortable: true
+    },
+    // Shows the track's length in minutes and seconds.
+    {
+      name: "length",
+      label: "Length",
+      field: "length",
+      align: "left",
+      style: "width: 100px",
+      sortable: true
+    },
+    ]
+
+    onBeforeMount( async () => {
+    await getAvailableDevices();
+    });
 
   async function getAvailableDevices() {
-    try{
-
-    const response = await axios.get("playbackqueue/getdevices");
-    availableDevices.value = response.data as DeviceInfo[];
-    selectedDevice.value = availableDevices.value.length > 0 ? availableDevices.value[0] : null;
-    deviceStatusCode.value = response.status;
-  }
+    try {
+        const response = await axios.get("/api/playbackqueue/getdevices");
+        availableDevices.value = response.data as DeviceInfo[];
+        selectedDevice.value = availableDevices.value.length > 0 ? availableDevices.value[0] : null;
+        deviceStatusCode.value = response.status;
+    }
   catch (error) {
     deviceStatusCode.value = (error as AxiosError).response?.status || null;
     console.error(error);
@@ -73,32 +176,38 @@ onBeforeMount( async () => {
   }
   }
 
-defineEmits([
+  defineEmits([
   ...useDialogPluginComponent.emits
 ]);
 
 const {dialogRef, onDialogOK, onDialogCancel} = useDialogPluginComponent();
 
-function onOK(){
+async function onOK(){
+  Loading.show({
+    message: "Adding tracks to queue..."
+  });
   try{
-    axios.post(
-      `playbackqueue/addtoqueue`,
+    await axios.post(
+      `/api/playbackqueue/addtoqueue`,
       {
-        spotifyTrackId: props.trackId,
+        spotifyTrackIds: props.tracks.map(track => track.id),
         deviceId: selectedDevice.value?.id
       });
   Notify.create({
-          message: `Successfully added track to queue.`,
+          message: `Successfully added ${props.tracks.length} ${props.tracks.length != 1 ? "tracks" : "track"} to queue.`,
           color: "green"
         });
   onDialogOK();
   }
   catch (error) {
     Notify.create({
-        message: `Error adding track to queue.`,
+        message: `Error adding tracks to queue.`,
         color: "red"
       });
-    return;
+    //return;
+  }
+  finally{
+    Loading.hide();
   }
 }
 </script>

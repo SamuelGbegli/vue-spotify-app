@@ -15,7 +15,10 @@
   }
 
   async function redirectToSpotifyAuthorise() {
-    const response = await axios.get("auth/redirect", {
+    const url = new URL(window.location.pathname, window.location.origin);
+    console.log(url);
+    authStore.setRedirectPath(url.pathname + url.search);
+    const response = await axios.get("/api/auth/redirect", {
       headers: {
         "Content-Type": "application/json", "Accept": "application/json"
       }
@@ -33,7 +36,7 @@
   async function logoutClick() {
   authStore.logout()
     try {
-      await axios.get("/auth/logout");
+      await axios.get("/api/auth/logout");
     }
     catch (error) {
       console.log(error as AxiosError);
@@ -88,9 +91,14 @@
                 Review pending track records
               </QItemSection>
             </QItem>
-            <QItem clickable to="/searchfortrackinplaylist">
+            <QItem clickable to="/search">
               <QItemSection>
-                Search for tracks in playlist
+                Search
+              </QItemSection>
+            </QItem>
+            <QItem clickable to="/tracklists">
+              <QItemSection>
+                Track Lists
               </QItemSection>
             </QItem>
             <QItem clickable @click="logoutClick()">

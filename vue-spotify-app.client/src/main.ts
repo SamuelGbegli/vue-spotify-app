@@ -10,7 +10,10 @@ import 'quasar/src/css/index.sass'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/authStore'
+import { useTitle } from '@vueuse/core'
 import axios from 'axios'
+
+const title = useTitle();
 
 const app = createApp(App)
 
@@ -32,43 +35,39 @@ router.beforeEach(async (to) => {
 
   const code = to.query.code?.toString()
   if (code) {
-    const code_verifier = authStore.codeVerifier
+    try {
+      const code_verifier = authStore.codeVerifier
 
-    const response = await axios.get(`/auth/callback?code=${code}&state=a`)
+      const response = await axios.get(`/api/auth/callback?code=${code}&state=a&redirectpath=${authStore.redirectPath}`)
 
-    authStore.setAccessToken(response.data.access_token)
-    authStore.setRefreshToken(response.data.refresh_token)
-    authStore.setExpiresIn(response.data.expires_in)
+      //Gets profile
+      const profileResponse = await axios.get('/api/auth/me')
 
-    //Gets profile
-    const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
-      headers: {
-        Authorization: `Bearer ${response.data.access_token}`,
-      },
-    })
+      authStore.setUserName(profileResponse.data.DisplayName)
+      authStore.setAvatar(profileResponse.data.ProfileImageLink)
+      authStore.setLoggedIn(200)
 
-    authStore.setUserName(profileResponse.data.display_name)
-    if (profileResponse.data.images.length > 0) {
-      authStore.setAvatar(profileResponse.data.images[0].url)
-    } else {
-      authStore.setAvatar('')
+      const url = new URL(window.location.href)
+      const searchParams = new URLSearchParams(url.search)
+      searchParams.delete('code')
+      searchParams.delete('state')
+      url.searchParams.delete('code')
+      url.searchParams.delete('state')
+
+      title.value = to.meta.title as string || 'Vue Spotify App';
+      router.replace(authStore.redirectPath);
+    }
+    catch (ex) {
+      title.value = 'Error';
+      const error = ex as AxiosError;
+      authStore.setLoggedIn(error.response?.status || 0);
     }
 
-    const url = new URL(window.location.href)
-    url.searchParams.delete('code')
-    const updadedUrl = url.search ? url.href : url.href.replace('?', '')
-    router.replace('/')
+
+  }
+  else{
+    title.value = to.meta.title as string || 'Vue Spotify App';
   }
 
-  try {
-    const meResponse = await axios.get('auth/me');
-    authStore.setLoggedIn(meResponse.status);
-}
-  catch (ex) {
-    const error = ex as AxiosError;
-    authStore.setLoggedIn(error.response?.status || 0);
-
-
-}
-}
+  }
 )

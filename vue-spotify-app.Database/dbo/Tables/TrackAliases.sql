@@ -1,0 +1,6 @@
+﻿CREATE TABLE [dbo].[TrackAliases] (
+    [ID]   UNIQUEIDENTIFIER NOT NULL,
+    [Name] NVARCHAR (MAX)   NOT NULL,
+    CONSTRAINT [PK_TrackAliases] PRIMARY KEY CLUSTERED ([ID] ASC)
+);
+

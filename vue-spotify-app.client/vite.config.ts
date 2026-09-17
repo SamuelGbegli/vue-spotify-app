@@ -61,26 +61,7 @@ export default defineConfig({
             target,
             secure: false
           },
-
-        '^/auth': {
-          target,
-          secure: false
-        },
-
-          '^/track': {
-            target,
-            secure: false
-          },
-          '^/playlist': {
-            target,
-            secure: false
-          },
-
-          '^/playbackrecord': {
-            target,
-            secure: false
-        },
-          '^/playbackqueue': {
+        '^/api': {
           target,
           secure: false
         }

@@ -10,6 +10,8 @@ export const useAuthStore = defineStore('auth', {
     expiresIn: localStorage.getItem('expires_in'),
     expires: localStorage.getItem('expires'),
 
+    redirectPath: localStorage.getItem('redirect_path') || '/',
+
     userName: localStorage.getItem('user_name'),
     avatar: localStorage.getItem('avatar_link'),
 
@@ -49,6 +51,10 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('logged_in', value.toString())
       this.loggedIn = value.toString();
     },
+    setRedirectPath(value: string) {
+      localStorage.setItem('redirect_path', value)
+      this.redirectPath = value
+    },
     logout() {
       this.codeVerifier = null
       this.accessToken = null
@@ -58,6 +64,7 @@ export const useAuthStore = defineStore('auth', {
       this.userName = null
       this.avatar = null
       this.loggedIn = "0"
+      this.redirectPath = '/'
 
       localStorage.clear()
     },

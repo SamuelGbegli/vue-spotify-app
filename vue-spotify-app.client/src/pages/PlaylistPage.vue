@@ -90,7 +90,7 @@ import { useRoute, useRouter } from 'vue-router';
       statusCode.value = null;
 
       try {
-        const response = await axios.get(`playlist/getplaylists?offset=${(pageOffset.value - 1) * playlistLimit.value}&numberOfPlaylists=${playlistLimit.value}`,{
+        const response = await axios.get(`/api/playlist/getplaylists?offset=${(pageOffset.value - 1) * playlistLimit.value}&numberOfPlaylists=${playlistLimit.value}`,{
           headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
         })
         playlists.value = []
@@ -112,7 +112,7 @@ import { useRoute, useRouter } from 'vue-router';
       message: 'Initialising backend database...',
     })
     try {
-      const response = await axios.get("playlist/initialisetracks",
+      const response = await axios.get("/api/playlist/initialisetracks",
         {
           headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
         })

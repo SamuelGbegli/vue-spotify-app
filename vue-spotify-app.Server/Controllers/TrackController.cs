@@ -12,7 +12,7 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class TrackController : ControllerBase
     {
         private readonly TrackService _trackService;
@@ -71,7 +71,9 @@ namespace vue_spotify_app.Server.Controllers
         [Route("gettracks")]
         [Authorize]
         public async Task<IActionResult> GetTracks(
+            [FromQuery] List<int> offset,
             [FromQuery] string? playlistId = null,
+            [FromQuery] Guid? listId = null,
             [FromQuery] string query = "",
             [FromQuery] bool searchName = true,
             [FromQuery] bool searchArtist = true,
@@ -80,10 +82,9 @@ namespace vue_spotify_app.Server.Controllers
             [FromQuery] DateTime? dateRangeTo = null,
             [FromQuery] SortType sortType = SortType.Name,
             [FromQuery] Classes.SortOrder sortOrder = Classes.SortOrder.Ascending,
-            [FromQuery] int offset = 0,
             [FromQuery] int numberOfTracks = 10)
         {
-                var stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
             try
             {
@@ -98,22 +99,43 @@ namespace vue_spotify_app.Server.Controllers
                     SortType = sortType,
                     SortOrder = sortOrder
                 };
-                // var tracks = await _trackService.GetTracks(trackQuery: trackQuery, offset: offset, numberOfTracks: numberOfTracks);
-                
+
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
+                if (listId == null)
+                {
+                    if (playlistId != null)
+                    {
+                        var trackList = await _dataContext.TrackLists.FirstOrDefaultAsync(tl => tl.PlaylistID == playlistId && tl.UserID == user.SpotifyUserID);
+                        if (trackList != null)
+                        {
+                            listId = trackList.ID;
+                        }
+                        else
+                        {
+                            return BadRequest("Playlist not found for the user.");
+                        }
+                    }
+                    else
+                    {
+                        var trackList = await _dataContext.TrackLists.FirstOrDefaultAsync(tl => tl.TrackListType == TrackListType.LikedSongs && tl.UserID == user.SpotifyUserID);
+                        listId = trackList?.ID;
+                    }
+
+                }
                 var data = await _trackService.GetTracksNew(
                     spotifyUserID: user.SpotifyUserID,
-                     playlistId: playlistId,
+                     listID: listId.Value,
                      filter: filter,
-                     offset: offset,
+                     offsets: offset,
                      numberOfTracks: numberOfTracks);
+
                 stopwatch.Stop();
                 return Ok(new
                 {
-                    timeElapsed = stopwatch.ElapsedMilliseconds,
-                    totalTracks =data.Item1,
+                    timeElapsed = stopwatch.Elapsed,
+                    totalTracks = data.Item1,
                     tracks = data.Item2
                 });
             }
@@ -149,13 +171,13 @@ namespace vue_spotify_app.Server.Controllers
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                  return StatusCode(500, ex.Message);
+                return StatusCode(500, ex.Message);
             }
         }
 
         [HttpGet]
         [Route("gettrack/{id}")]
-        public async Task<IActionResult> GetTrack([FromHeader] string authToken, [FromRoute] string id)
+        public async Task<IActionResult> GetTrack([FromRoute] string id)
         {
             try
             {
@@ -170,6 +192,57 @@ namespace vue_spotify_app.Server.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("validatetracks")]
+        [Authorize]
+        public async Task<IActionResult> ValidateTracks([FromBody] List<string> trackIds)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var data = await _trackService.ValidateTracks(user.ID, trackIds);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("getrandomtracks")]
+        public async Task<IActionResult> GetRandomTracks([FromQuery]Guid? listID, [FromQuery] string? playlistID, [FromQuery] int count)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+
+                if (listID == null)
+                {
+                    if (playlistID != null)
+                    {
+                        var playlist = await _dataContext.TrackLists.FirstAsync(l => l.PlaylistID == playlistID);
+                        if (playlist.UserID != user.SpotifyUserID) return Forbid();
+
+                        listID = playlist.ID;
+                    }
+                    else
+                    {
+                        listID = (await _dataContext.TrackLists.FirstAsync(l => l.UserID == user.SpotifyUserID && l.TrackListType == TrackListType.LikedSongs)).ID;
+                    }
+                }
+                var tracks = await _trackService.GetRandomTracks(user.ID, listID.Value, count);
+                return Ok(tracks);
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpGet]
         [Route("exporttracks")]
         public async Task<IActionResult> ExportTracks()
@@ -177,8 +250,8 @@ namespace vue_spotify_app.Server.Controllers
             // TODO: rewrite function to create and return CSV file
             try
             {
-                var tracks = await _trackService.GetTracks();
-                return Ok(tracks);
+                //var tracks = await _trackService.GetTracks();
+                return Ok();
             }
             catch (Exception ex)
             {

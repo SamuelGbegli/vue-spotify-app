@@ -54,6 +54,10 @@ namespace vue_spotify_app.Server.Data
 
         public DbSet<TrackAlias> TrackAliases { get; set; }
 
+        public DbSet<SavedTrack> SavedTracks { get; set; }
+
+        public DbSet<TrackList> TrackLists { get; set; }
+
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
@@ -98,6 +102,26 @@ namespace vue_spotify_app.Server.Data
                                     joinEntity.HasIndex("ArtistID");
                                 })
                 ;
+
+            modelBuilder.Entity<TrackArtist>()
+                .ToTable("TrackArtists")
+                .HasKey(ta => ta.ID);
+
+            modelBuilder.Entity<TrackArtist>()
+                .HasIndex(ta => new { ta.TrackID, ta.ArtistID }).IsUnique();
+
+            modelBuilder.Entity<TrackArtist>()
+                .HasOne(ta => ta.Track)
+                .WithMany(t => t.TrackArtists)
+                .HasForeignKey(ta => ta.TrackID)
+                //.HasConstraintName("FK_TrackArtist_Tracks_TrackID")
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TrackArtist>()
+                .HasOne(ta => ta.Artist)
+                .WithMany(a => a.TrackArtists)
+                .HasForeignKey(ta => ta.ArtistID)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Artist>()
                 .ToTable("Artists")
@@ -163,6 +187,20 @@ namespace vue_spotify_app.Server.Data
                 .HasMany(a => a.Tracks)
                 .WithOne(t => t.Alias)
                 .HasForeignKey(t => t.AliasID);
+
+            modelBuilder.Entity<SavedTrack>()
+                .ToTable("SavedTracks")
+                .HasOne(st => st.User)
+                .WithMany(u => u.SavedTracks)
+                .HasForeignKey(st => st.UserID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TrackList>()
+                .ToTable("TrackLists")
+                .HasMany(l => l.Tracks)
+                .WithOne(t => t.TrackList)
+                .HasForeignKey(t => t.TrackListID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
     }

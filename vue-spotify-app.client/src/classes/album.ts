@@ -15,7 +15,7 @@ export default class Album{
     // An interal URI for the album on Spotify
     spotifyUri: string = "";
     // An external URL to view the album on Spotify's website
-    externalUrl: string = ""
+    externalURL: string = ""
     // Stores the album's cover. Can be null
     albumCover: AlbumCover | null = null
     // An array of the artists credited for the album
@@ -27,7 +27,7 @@ export default class Album{
         this.numberOfTracks = data.total_tracks;
         this.releaseDate = new Date(data.release_date);
         this.spotifyUri = data.uri;
-        this.externalUrl = data.external_urls.spotify;
+        this.externalURL = data.external_urls.spotify;
 
         if(data.images.length > 0) {
             this.albumCover = new AlbumCover();

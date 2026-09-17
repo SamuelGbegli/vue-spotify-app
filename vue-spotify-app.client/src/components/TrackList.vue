@@ -30,13 +30,13 @@
               <QImg :src="x.albumCover" :alt="`Album cover for ${x.albumName} by ${x.artists.map((y) => y.name).join(', ')}`" width="50px" />
             </td>
             <td>
-              <a :href="x.externalUrl">{{ x.name }}</a>
+              <a :href="x.externalURL">{{ x.name }}</a>
             </td>
             <td>
-              <span v-for="y in x.artists" :key="y.id" :href="y.externalUrl"><a :href="y.externalUrl">{{ y.name }}</a><span v-if="x.artists.indexOf(y) < x.artists.length - 1">, </span></span>
+              <span v-for="y in x.artists" :key="y.id" :href="y.externalURL"><a :href="y.externalURL">{{ y.name }}</a><span v-if="x.artists.indexOf(y) < x.artists.length - 1">, </span></span>
             </td>
             <td>
-              <a :href="x.albumExternalUrl">{{ x.albumName }}</a>
+              <a :href="x.albumExternalURL">{{ x.albumName }}</a>
             </td>
 
             <td>{{ ConvertMilisecondsToMinutesAndSeconds(x.length) }}</td>
@@ -55,7 +55,7 @@
                   <QItem clickable v-close-popup :to="`viewtrack/${x.id}`">
                     <QItemSection>View track</QItemSection>
                   </QItem>
-                  <QItem clickable v-close-popup @click="openQueueDialog(x.id, x.name)">
+                  <QItem clickable v-close-popup @click="openQueueDialog(x)">
                     <QItemSection>Add track to queue</QItemSection>
                   </QItem>
                   <QItem clickable v-close-popup @click="copyTrackIdToClipboard(x.id)">
@@ -207,7 +207,7 @@
       query.append("sortType", filter.value.sortType.toString());
       query.append("sortOrder", filter.value.sortOrder.toString());
 
-      const response = await axios.get(`track/gettracks?${query.toString()}`)
+      const response = await axios.get(`/api/track/gettracks?${query.toString()}`)
       console.log(response.data)
       trackViewModels.value = []
       numberOftracks.value = response.data.totalTracks
@@ -251,7 +251,7 @@
       message: 'Initialising backend database...',
     })
     try {
-      const response = await axios.get("track/initialisetracks",
+      const response = await axios.get("/api/track/initialisetracks",
         {
           headers: { "authToken": authStore.accessToken, "Content-Type": "application/json", "Accept": "application/json" }
         })
@@ -270,12 +270,11 @@
     }
   }
 
-  function openQueueDialog(trackId: string, name: string) {
+  function openQueueDialog(track:TrackViewModel) {
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        trackId: trackId,
-        name: name
+        track: track
       }
     }).onOk(async (data) => {
       Notify.create("Successfully added track to queue.");
