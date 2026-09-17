@@ -562,7 +562,7 @@ import { useRoute, useRouter } from 'vue-router';
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        track: response.data as TrackViewModel
+        tracks: [response.data as TrackViewModel]
       }
     }).onOk(async (data) => {
 

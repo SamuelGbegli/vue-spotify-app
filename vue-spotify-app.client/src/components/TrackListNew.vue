@@ -1,5 +1,6 @@
 <template>
-  <div class="q-pa-md">
+  <!--
+    <div class="q-pa-md">
     <div v-if="statusCode === 200 || statusCode == null" class="q-gutter-lg">
       <div class="row">
         <QChip v-if="route.query.query" :label="`'${route.query.query}' ${generateFilterQueryChip()}`" color="primary" text-color="white" />
@@ -21,21 +22,49 @@
       </div>
     </div>
   </div>
+  -->
   <QTable class="my-table"
           :title='(statusCode === 200 ? `Total tracks: ${ numberOftracks }` : statusCode === null ? "Loading tracks..." : "Failed to load tracks.")'
-          style="height: 70vh"
+          style="height: 85vh"
           :rows="trackViewModels"
           :columns="columns"
           row-key="id"
           wrap-cells
           :loading="statusCode === null"
-          virtual-scroll
+          :virtual-scroll="props.useVirtualScrolling"
           :virtual-scroll-item-size="50"
           :virtual-scroll-sticky-size-start="50"
           :rows-per-page-options="[0]"
           v-model:pagination="pagination"
           @virtual-scroll="onScroll"
           @request="onRequest">
+    <template v-slot:top>
+      <div class="col q-pa-sm q-gutter-sm">
+      <div class="row">
+        <div class="q-table__title" v-if="trackBatches.length > 0">Total tracks: {{ pagination.rowsNumber }}</div>
+        <QSpace />
+        <QBtn label="Filter and sort tracks" color="primary" @click="openFilterAndSortDialog()" />
+      </div>
+      <div class="row items-center">
+        <div v-if="statusCode === 200 || statusCode == null" class="row q-gutter-xs">
+        <QChip v-if="route.query.query" :label="`'${route.query.query}' ${generateFilterQueryChip()}`" color="primary" text-color="white" />
+        <QChip v-if="route.query.from || route.query.to">
+          <template v-if="route.query.from && route.query.to">
+            {{ `Saved between ${date.formatDate(new Date(route.query.from.toString()), "Do MMM YYYY")} and ${date.formatDate(new Date(route.query.to.toString()), "Do MMM YYYY")}` }}
+          </template>
+          <template v-else-if="route.query.from">
+            {{ `Saved after ${date.formatDate(route.query.from.toString(), "Do MMM YYYY")}` }}
+          </template>
+          <template v-else-if="route.query.to">
+            {{ `Saved before ${date.formatDate(route.query.to.toString(), "Do MMM YYYY")}` }}
+          </template>
+        </QChip>
+        <QChip v-if="route.query.sort != null" :label="`Sorted by ${generateFilterSortChip()}`" color="secondary" text-color="white" />
+        </div>
+      </div>
+      </div>
+      
+    </template>
     <template v-slot:body-cell-albumCover="props">
       <QTd :props="props">
         <QImg :src="props.row.albumCover"
@@ -114,12 +143,30 @@
                     <QItemLabel>Add to queue</QItemLabel>
                   </QItemSection>
                 </QItem>
+                <QItem v-if="listId" clickable v-close-popup @click="openDeleteDialog(props.row)">
+                  <QItemSection>
+                    <QItemLabel>Remove</QItemLabel>
+                  </QItemSection>
+                </QItem>
               </QList>
             </QMenu>
           </QBtn>
         </div>
       </QTd>
     </template>
+    <template v-slot:bottom>
+      <QBtn label="Add random tracks to queue" @click="openQueueRandomTracksDialog"/>
+      <QSpace/>
+      <QPagination v-model="pagination.page"
+                        :max="Math.ceil(pagination.rowsNumber/pagination.rowsPerPage)"
+                        size="sm"
+                        @update:model-value="getTracks()"
+                        input />
+    </template>
+    <!--Shows loading spinner when table is loading-->
+          <template v-slot:loading v-if="!useVirtualScrolling">
+            <QInnerLoading showing size="50px" color="green" />
+          </template>
   </QTable>
 </template>
 <script setup lang="ts">
@@ -134,9 +181,10 @@
   import { computed, watch, ref, onBeforeMount } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import TrackViewModelBatch from '@/classes/trackViewModelBatch';
-import SortOrder from '@/enumClasses/sortOrder';
-import SortType from '@/enumClasses/sortType';
-
+  import SortOrder from '@/enumClasses/sortOrder';
+  import SortType from '@/enumClasses/sortType';
+  import AddRandomTracksToQueueDialog from '@/dialogs/addRandomTracksToQueueDialog.vue';
+import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
 
   const authStore = useAuthStore()
   const route = useRoute()
@@ -146,14 +194,15 @@ import SortType from '@/enumClasses/sortType';
   // tracks from the Liked Songs library are fetched instead.
   const props = defineProps<{
     playlistId?: string | null,
-    listId?: string | null
+    listId?: string | null,
+    useVirtualScrolling: boolean
   }>()
 
   // The total tracks stored in the playlist or Liked Songs library.
   const numberOftracks = ref<number | null>(null)
 
   // The current page of tracks the user is on.
-  const pageOffset = ref<number>(1)
+  //const pageOffset = ref<number>(1)
 
   // The maximum number of tracks to be fetched in a single request.
   const trackLimit = ref<number>(50)
@@ -193,7 +242,7 @@ import SortType from '@/enumClasses/sortType';
       field: "albumCover",
       align: "left",
       sortable: false,
-      style: "width: auto"
+      style: "width: 50px"
     },
     // Shows the track's name.
     {
@@ -271,7 +320,7 @@ import SortType from '@/enumClasses/sortType';
 
   // Generates the columns visible based on whether a playlist ID is provided.
   const columns = computed(() => {
-    if (props.playlistId == null) {
+    if (props.playlistId == null && props.listId == null) {
       return baseColumns.filter(x => x.name !== "inLikedSongs");
     }
     return baseColumns;
@@ -281,7 +330,7 @@ import SortType from '@/enumClasses/sortType';
   const pagination = ref({
     sortBy: "name",
     page: 1,
-    rowsPerPage: 0,
+    rowsPerPage: 50,
     rowsNumber: 0,
     descending: false
   });
@@ -300,7 +349,7 @@ import SortType from '@/enumClasses/sortType';
   // loaded or the user resubmits the page's URL.
   async function onRouteUpdate() {
     console.log(typeof (route.query.sort));
-    if (route.query.page) pageOffset.value = parseInt(route.query.page.toString());
+    if (route.query.page) pagination.value.page = parseInt(route.query.page.toString());
     if (route.query.query) filter.value.query = route.query.query.toString();
     if (route.query.searchName) filter.value.searchName = route.query.searchName.toString() === "true";
     if (route.query.searchArtist) filter.value.searchArtist = route.query.searchArtist.toString() === "true";
@@ -314,14 +363,14 @@ import SortType from '@/enumClasses/sortType';
 
   async function getTracks(addToTop: boolean = false, reset = false, batchIndexes: number[] | null = null) {
 
-    console.log(route.query, pageOffset.value);
+    console.log(route.query, pagination.value.page);
     //pageOffset.value = route.query.page ? parseInt(route.query.page.toString()) : 1
     trackQuery.value = route.query.trackQuery ? route.query.trackQuery.toString() : ""
 
     statusCode.value = null;
 
     if (reset) {
-      pageOffset.value = 1;
+      pagination.value.page = 1;
       trackBatches.value = [];
     }
 
@@ -330,12 +379,12 @@ import SortType from '@/enumClasses/sortType';
       const query = new URLSearchParams();
       if (!!props.playlistId) query.append("playlistId", props.playlistId.toString());
       if (!!props.listId) query.append("listId", props.listId.toString());
-      if (batchIndexes != null) {
+      if (batchIndexes != null && props.useVirtualScrolling) {
         batchIndexes.forEach(x =>{
           query.append("offset", x.toString());
         })
       }
-      else query.append("offset", ((pageOffset.value - 1) * trackLimit.value).toString());
+      else query.append("offset", ((pagination.value.page - 1) * pagination.value.rowsPerPage).toString());
       query.append("numberOfTracks", trackLimit.value.toString());
       if (filter.value.query !== null && filter.value.query.match(/^ *$/) == null) query.append("query", filter.value.query);
       query.append("searchName", filter.value.searchName.toString());
@@ -351,7 +400,16 @@ import SortType from '@/enumClasses/sortType';
       numberOftracks.value = response.data.totalTracks
       pagination.value.rowsNumber = response.data.totalTracks;
       console.log(response.data);
-     if(batchIndexes != null){
+
+     if(!props.useVirtualScrolling)
+     {
+        const batch = response.data as TrackViewModelBatch;
+        console.log(batch);
+        trackBatches.value = response.data.tracks as TrackViewModelBatch[];
+        console.log(batch);
+     }
+     else {
+      if (batchIndexes != null){
       const updatedBatches: TrackViewModelBatch[] = [];
       response.data.tracks.forEach(x =>{
         const batch = new TrackViewModelBatch();
@@ -364,12 +422,14 @@ import SortType from '@/enumClasses/sortType';
       trackBatches.value = updatedBatches;
       console.log(trackBatches.value);
      }
+
      else if (!trackBatches.value.map(x => x.batchIndex).includes(response.data.tracks[0].batchIndex)){
        const batch = new TrackViewModelBatch();
       batch.batchIndex = response.data.tracks[0].batchIndex;
       response.data.tracks[0].trackViewModels.forEach((x: any) => {
         batch.trackViewModels.push(new TrackViewModel(x));
       });
+
       if (addToTop) {
         if (trackBatches.value.length >= maximumNumberOfBatches.value) {
           trackBatches.value.pop();
@@ -383,6 +443,7 @@ import SortType from '@/enumClasses/sortType';
         trackBatches.value.push(batch);
       }
       console.log(batch);
+     }
      }
 
       statusCode.value = response.status;
@@ -400,15 +461,15 @@ import SortType from '@/enumClasses/sortType';
     if (pagination.value.rowsNumber > trackLimit.value) {
       if (nearTop && Math.min(...trackBatches.value.map(x => x.batchIndex)) > 1 && statusCode.value != null) {
         console.log("Top of page reached", trackBatches.value);
-        pageOffset.value = trackBatches.value.length > 0 ? Math.min(...trackBatches.value.map(x => x.batchIndex)) - 1 : 1;
-        console.log(pageOffset.value);
+        pagination.value.page = trackBatches.value.length > 0 ? Math.min(...trackBatches.value.map(x => x.batchIndex)) - 1 : 1;
+        console.log(pagination.value.page);
         await getTracks(true);
         if (trackBatches.value[trackBatches.value.length - 1]?.batchIndex != Math.ceil(pagination.value.rowsNumber / trackLimit.value)) ref.scrollTo(currentIndex.value + trackBatches.value[trackBatches.value.length - 1].trackViewModels.length, 0);
       }
       if (nearBottom && Math.max(...trackBatches.value.map(x => x.batchIndex)) < Math.ceil(pagination.value.rowsNumber / trackLimit.value) && statusCode.value != null) {
         console.log("End of page reached", trackBatches.value);
-        pageOffset.value = trackBatches.value.length > 0 ? Math.max(...trackBatches.value.map(x => x.batchIndex)) + 1 : 1;
-        console.log(pageOffset.value);
+        pagination.value.page = trackBatches.value.length > 0 ? Math.max(...trackBatches.value.map(x => x.batchIndex)) + 1 : 1;
+        console.log(pagination.value.page);
         await getTracks();
         if (trackBatches.value[0]?.batchIndex != 1) ref.scrollTo(currentIndex.value - trackBatches.value[0].trackViewModels.length, 0);
       }
@@ -487,10 +548,8 @@ import SortType from '@/enumClasses/sortType';
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        track: track
+        tracks: [track]
       }
-    }).onOk(async (data) => {
-
     });
   }
 
@@ -503,7 +562,7 @@ import SortType from '@/enumClasses/sortType';
     }).onOk(async (data) => {
       console.log(data);
       filter.value = data;
-      pageOffset.value = 1;
+      pagination.value.page = 1;
       await updateFilter();
     });
   }
@@ -549,6 +608,40 @@ import SortType from '@/enumClasses/sortType';
     return text;
   }
 
+  function openQueueRandomTracksDialog(){
+    Dialog.create({
+      component: AddRandomTracksToQueueDialog,
+      componentProps: {
+        listID: props.listId,
+        playlistID: props.playlistId
+      }
+    }).onOk(async (data) => {
+      if(data.removeSelectedTracks) {
+        const newTotalTracks = pagination.value.rowsNumber - data.numberOfTracks;
+        pagination.value.page = Math.ceil(newTotalTracks / pagination.value.rowsPerPage);
+        await getTracks();
+      }
+    });
+  }
+
+  function openDeleteDialog(track: TrackViewModel){
+    Dialog.create({
+      component: DeleteTracksDialog,
+      componentProps: {
+        listID: props.listId,
+        listName: "",
+        tracks: [track]
+      }
+    }).onOk(async () => {
+    
+        const newTotalTracks = pagination.value.rowsNumber - 1;
+        pagination.value.page = Math.ceil(newTotalTracks / pagination.value.rowsPerPage);
+        await getTracks();
+      }
+    )
+  }
+  
+
 </script>
 <style lang="css">
   .my-table {
@@ -562,7 +655,7 @@ import SortType from '@/enumClasses/sortType';
       background: white;
     }
 
-    td:nth-child(1),
+    /*td:nth-child(1),
     th:nth-child(1) {
       position: sticky;
       left: 0;
@@ -582,6 +675,6 @@ import SortType from '@/enumClasses/sortType';
     thead th:nth-child(1),
     thead th:nth-child(2) {
       z-index: 5;
-    }
+    }*/
   }
 </style>

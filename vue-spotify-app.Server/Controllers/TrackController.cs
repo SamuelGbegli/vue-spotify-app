@@ -211,6 +211,39 @@ namespace vue_spotify_app.Server.Controllers
         }
 
         [HttpGet]
+        [Route("getrandomtracks")]
+        public async Task<IActionResult> GetRandomTracks([FromQuery]Guid? listID, [FromQuery] string? playlistID, [FromQuery] int count)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+
+                if (listID == null)
+                {
+                    if (playlistID != null)
+                    {
+                        var playlist = await _dataContext.TrackLists.FirstAsync(l => l.PlaylistID == playlistID);
+                        if (playlist.UserID != user.SpotifyUserID) return Forbid();
+
+                        listID = playlist.ID;
+                    }
+                    else
+                    {
+                        listID = (await _dataContext.TrackLists.FirstAsync(l => l.UserID == user.SpotifyUserID && l.TrackListType == TrackListType.LikedSongs)).ID;
+                    }
+                }
+                var tracks = await _trackService.GetRandomTracks(user.ID, listID.Value, count);
+                return Ok(tracks);
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet]
         [Route("exporttracks")]
         public async Task<IActionResult> ExportTracks()
         {

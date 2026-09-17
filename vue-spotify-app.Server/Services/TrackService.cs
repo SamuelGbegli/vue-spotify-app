@@ -198,6 +198,8 @@ namespace vue_spotify_app.Server
 
         public async Task<(int, List<TrackViewModelBatch>)> GetTracksNew(string spotifyUserID, TrackFilter filter, List<int> offsets, Guid listID, int numberOfTracks = 50)
         {
+            var userLikedSongsList = await _dataContext.TrackLists.FirstAsync(l => l.UserID == spotifyUserID && l.TrackListType == TrackListType.LikedSongs);
+
             var query =
                 from tr in _dataContext.TrackRecords
                 join t in _dataContext.Tracks
@@ -231,8 +233,7 @@ namespace vue_spotify_app.Server
                 from tr in _dataContext.TrackRecords
                 join t in _dataContext.Tracks
                     on tr.SpotifyID equals t.ID
-                where tr.UserId == spotifyUserID
-                    && tr.PlaylistID == null
+                where tr.TrackListID == userLikedSongsList.ID
                 select t.AliasID;
 
 
@@ -538,7 +539,6 @@ namespace vue_spotify_app.Server
             }
         }
 
-
         public async Task<Classes.Track> AddOrUpdateTrack(Classes.APIData.Track track)
         {
             // Gets or creates artist entities for the track
@@ -727,6 +727,68 @@ namespace vue_spotify_app.Server
             }
             trackEntity.GenerateMatchKey();
             return trackEntity;
+        }
+
+        /// <summary>
+        /// Gets a random set of tracks from a list.
+        /// </summary>
+        /// <param name="listId">The ID of the list tracks are saved to.</param>
+        /// <param name="count">The number of tracks to return.</param>
+        /// <returns>A list of random tracks.</returns>
+        public async Task<List<TrackViewModel>> GetRandomTracks(
+            Guid userID,
+            Guid listID,
+            int count = 10
+            )
+        {
+            // Stores the list of tracks to return
+            var tracks = new List<TrackViewModel>();
+            // Stores the indexes of the tracks to return from the database
+            var indexesToReturn = new List<int>();
+            // Gets the number of saved tracks for the user
+            var numberOfSavedTracks = _dataContext.TrackRecords.Count(r => r.TrackListID == listID);
+            // Creates a new random number generator
+            var random = new Random();
+            // Stores the maximum number of tracks to return based on whether the selected number or number of traxks is higher
+            var max = count > numberOfSavedTracks ? numberOfSavedTracks : count;
+            // Randomly chooses indexes to be returned
+            while (indexesToReturn.Count < max)
+            {
+                var randomIndex = random.Next(numberOfSavedTracks);
+                if (!indexesToReturn.Contains(randomIndex))
+                {
+                    indexesToReturn.Add(randomIndex);
+                }
+            }
+            // Stores the selected saved tracks
+            var trackRecords = new List<TrackRecord>();
+
+            // Queryable of the user's saved tracks ordered by date added
+            var selectedTracks = _dataContext.TrackRecords
+                .Where(r => r.TrackListID == listID)
+                .OrderBy(r => r.DateAdded)
+                .AsQueryable();
+
+            // Gets items from the user's saved tracks based on the randomly selected indexes
+            foreach (var index in indexesToReturn)
+            {
+                trackRecords.Add(selectedTracks.ElementAt(index));
+            }
+
+            // Gets track information for each selected track
+            foreach (var item in trackRecords)
+            {
+
+                var track = await GetTrack(userID, item.SpotifyID);
+                if (track != null)
+                {
+                    track.DateSaved = item.DateAdded;
+
+                    tracks.Add(track);
+                }
+            }
+
+            return tracks;
         }
 
         /// <summary>

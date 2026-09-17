@@ -259,7 +259,7 @@ const selectedItemTypes = ref<{label: string, value: string}[]>([]);
     Dialog.create({
       component: AddTrackToQueueDialog,
       componentProps: {
-        track: track
+        tracks: [track]
       }
     }).onOk(async (data) => {
 

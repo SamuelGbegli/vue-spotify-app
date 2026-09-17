@@ -63,8 +63,8 @@ namespace vue_spotify_app.Server.Services
                 Name = name,
                 SortName = RegexHelpers.GenerateSortName(name),
                 TrackListType = TrackListType.InternalList,
-                DateCreated = DateTime.UtcNow,
-                DateModified = DateTime.UtcNow
+                DateCreated = DateTime.Now,
+                DateModified = DateTime.Now
             };
             _dataContext.TrackLists.Add(trackList);
             await _dataContext.SaveChangesAsync(cancellationToken);
@@ -79,7 +79,7 @@ namespace vue_spotify_app.Server.Services
             {
                 trackList.Name = newName;
                 trackList.SortName = RegexHelpers.GenerateSortName(newName);
-                trackList.DateModified = DateTime.UtcNow;
+                trackList.DateModified = DateTime.Now;
                 await _dataContext.SaveChangesAsync(cancellationToken);
             }
         }
@@ -120,11 +120,11 @@ namespace vue_spotify_app.Server.Services
                         UserId = user.SpotifyUserID,
                         TrackListID = listId,
                         SpotifyID = trackID,
-                        DateAdded = DateTime.UtcNow
+                        DateAdded = DateTime.Now
                     };
                     _dataContext.TrackRecords.Add(trackRecord);
                 }
-                trackList.DateModified = DateTime.UtcNow;
+                trackList.DateModified = DateTime.Now;
                 await _dataContext.SaveChangesAsync(cancellationToken);
             }
         }
@@ -146,7 +146,7 @@ namespace vue_spotify_app.Server.Services
                         _dataContext.TrackRecords.Remove(trackRecord);
                     }
                 }
-                trackList.DateModified = DateTime.UtcNow;
+                trackList.DateModified = DateTime.Now;
                 await _dataContext.SaveChangesAsync(cancellationToken);
             }
         }

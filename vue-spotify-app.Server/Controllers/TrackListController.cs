@@ -168,7 +168,7 @@ namespace vue_spotify_app.Server.Controllers
 
                 if (result != 0) return Ok("A list with that name already exists.");
 
-                return Ok("");
+                return Ok();
 
             }
             catch (Exception ex)
