@@ -262,6 +262,7 @@ namespace vue_spotify_app.Server
             await _dataContext.SaveChangesAsync();
         }
 
+        //TODO: remove
         public async Task<int> GetNumberOfTrackRecords(string id)
         {
             var track = await _dataContext.Tracks.FindAsync(id);
@@ -270,7 +271,7 @@ namespace vue_spotify_app.Server
             {
                 // Gets Spotify IDs of tracks with matching alias IDs
                 var trackIDs = await _dataContext.Tracks.Where(t => t.AliasID == track.AliasID && !string.IsNullOrWhiteSpace(t.Name)).Select(t => t.ID).ToListAsync();
-                // Gets all records with matching aliaa Spotify IDs
+                // Gets all records with matching alias Spotify IDs
                 return await _dataContext.PlaybackRecords.CountAsync(x => trackIDs.Contains(x.SpotifyID));
 
             }
@@ -324,13 +325,13 @@ namespace vue_spotify_app.Server
             }
             var query =
             from r in _dataContext.PlaybackRecords
-            join t in _dataContext.Tracks on r.SpotifyID equals t.ID
+            join t in _dataContext.Tracks.Include(t => t.Alias) on r.SpotifyID equals t.ID
             where (startDate == null || (dates.IsNullOrEmpty() && r.DatePlayed >= startDate) || (!dates.IsNullOrEmpty() &&  r.DatePlayed >= dates.Min()))
             && (endDate == null || (dates.IsNullOrEmpty() && r.DatePlayed < endDate.Value.AddDays(1)) || (!dates.IsNullOrEmpty() && r.DatePlayed <= dates.Max().AddDays(1)))
-            group r by t.AliasID into g
+            group r by t.Alias.PrimaryTrackID into g
             select new
             {
-                ID = g.Select(x => x.SpotifyID).FirstOrDefault(),
+                ID = g.Key,
                 Count = g.Count()
             };
 
@@ -343,33 +344,10 @@ namespace vue_spotify_app.Server
 
             foreach (var trackRecord in trackRecords)
             {
+                var track = await _trackService.GetTrack(userId, trackRecord.ID);
+                track.NumberOfFoundRecords = trackRecord.Count;
 
-                var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(userId, $"tracks/{trackRecord.ID}");
-
-                var viewModel = new TrackViewModel
-                {
-                    ID = trackRecord.ID,
-                    Name = track.name,
-                    ExternalURL = track.external_urls.spotify,
-                    AlbumName = track.album.name,
-                    AlbumExternalURL = track.album.external_urls.spotify,
-                    AlbumCover = track.album.images.LastOrDefault().url,
-                    NumberOfFoundRecords = trackRecord.Count
-                };
-
-                foreach (var artist in track.artists)
-                {
-                    viewModel.Artists.Add(new Classes.ArtistViewModel
-                    {
-                        ID = artist.id,
-                        Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify,
-                        Index = track.artists.IndexOf(artist)
-                    });
-                }
-
-
-                viewModels.Add(viewModel);
+                viewModels.Add(track);
 
             }
             return (totalRecords, viewModels);

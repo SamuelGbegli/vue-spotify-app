@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md">
-    <!-- Shows playlist information -->
+    <!-- Shows track list information -->
       <div class="text-h4">
         <span v-if="trackListViewModel">{{trackListViewModel?.name }}</span>
         <span v-else-if="statusCode == null">Loading...</span>
@@ -13,7 +13,6 @@
 
 </template>
 <script setup lang="ts">
-  import PlaylistViewModel from '@/classes/playlistViewModel';
   import TrackListNew from '@/components/TrackListNew.vue';
   import { useAuthStore } from '@/stores/authStore';
   import axios, { AxiosError } from 'axios';

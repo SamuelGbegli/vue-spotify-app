@@ -28,27 +28,26 @@ namespace vue_spotify_app.Server
         {
             var viewModels = new List<PlaylistViewModel>();
 
-            // Makes call to API
-
-            // Deserialize JSON response to object
-            var playlists = getUserEditablePlaylists ?  _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID).Skip(offset).Take(numberOfPlaylists).AsQueryable() :  _dataContext.Playlists.Skip(offset).Take(numberOfPlaylists).AsQueryable();
+            // Gets playlists from database
+            var playlists = getUserEditablePlaylists ? _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID).Skip(offset).Take(numberOfPlaylists).AsQueryable() : _dataContext.Playlists.Skip(offset).Take(numberOfPlaylists).AsQueryable();
             var totalPlaylists = getUserEditablePlaylists ? await _dataContext.Playlists.CountAsync(p => p.OwnerID == user.SpotifyUserID) : await _dataContext.Playlists.CountAsync();
 
+            // Converts each playlist into a view model
             foreach (var playlist in playlists)
             {
-                    var viewModel = new PlaylistViewModel
-                    {
-                        ID = playlist.ID,
-                        Name = playlist.Name,
-                        NumberOfTracks = playlist.NumberOfTracks,
-                        OwnerName = playlist.OwnerName,
-//                        OwnerLink = playlist.,
-                        ExternalURL = $"https://open.spotify.com/playlist/{playlist.ID}",
-                        ImageLink = playlist.ImageURL
-                    };
+                var viewModel = new PlaylistViewModel
+                {
+                    ID = playlist.ID,
+                    Name = playlist.Name,
+                    NumberOfTracks = playlist.NumberOfTracks,
+                    OwnerName = playlist.OwnerName,
+                    //                        OwnerLink = playlist.,
+                    ExternalURL = $"https://open.spotify.com/playlist/{playlist.ID}",
+                    ImageLink = playlist.ImageURL
+                };
                 viewModels.Add(viewModel);
-            
-        }
+
+            }
             return (totalPlaylists, viewModels);
         }
 
@@ -56,6 +55,7 @@ namespace vue_spotify_app.Server
         // TODO: Update to use cached playlist
         public async Task<PlaylistViewModel?> GetPlaylist(Guid userID, string playlistId)
         {
+            // Makes call to API
             var playlist = await _spotifyAPIWrapper.GetAsync<Classes.APIData.PlaylistItem>(userID, $"playlists/{playlistId}");
             // Creates view model with data fetched
             var viewModel = new PlaylistViewModel
@@ -205,95 +205,120 @@ namespace vue_spotify_app.Server
         }
 
 
-        public async Task InitialisePlaylistTracks(Guid userID)
+        public async Task InitialisePlaylistTracks(Guid userID, Playlist playlist)
         {
             const int bufferSize = 50;
+            // Sets lists to add tracks and records in bulk
             List<Classes.Track> tracksToAdd = new List<Classes.Track>(50);
             List<TrackRecord> recordsToAdd = new List<TrackRecord>(50);
 
+            // Zero-based index for tracks in the playlist
+            int index = 0;
+
+            // Gets user by ID
             var user = await _dataContext.Users.FindAsync(userID);
-            var playlists = await _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID.ToString()).ToListAsync();
-            foreach (var playlist in playlists)
+
+            // Gets all playlists the user has created
+            var playlists = _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID.ToString()).AsQueryable();
+
+
+
+
+            // Gets playlist's corresponding track list
+            var playlistTrackList = await _dataContext.TrackLists.FirstOrDefaultAsync(l => l.TrackListType == TrackListType.Playlist && l.PlaylistID == playlist.ID);
+
+
+            // API endpoint for getting playlists
+            var endpoint = $"playlists/{playlist.ID}/items?offset=0&limit=50";
+
+            var currentSavedTracks = await _dataContext.TrackRecords.CountAsync(r => r.PlaylistID == playlist.ID || r.TrackListID == playlistTrackList.ID);
+
+
+            if (currentSavedTracks > playlist.NumberOfTracks)
             {
-
-                var playlistTrackList = await _dataContext.TrackLists.FirstOrDefaultAsync(l => l.TrackListType == TrackListType.Playlist && l.PlaylistID == playlist.ID);
-                var endpoint = $"playlists/{playlist.ID}/tracks?offset=0&limit=50";
-                var cutoffDate = await _dataContext.TrackRecords.Where(r => r.PlaylistID == playlist.ID).MaxAsync(r => r.DateAdded);
-                while (endpoint != null)
-                {
-                    var playlistRespone = await _spotifyAPIWrapper.GetAsync<LikedSongsPage>(userID, endpoint);
-                    var tracksAfterCutoff = playlistRespone.items.Where(i => DateTime.Parse(i.added_at) > cutoffDate);
-                    var tracksBeforeCutoff = playlistRespone.items.Where(i => DateTime.Parse(i.added_at) <= cutoffDate);
-
-                    foreach (var item in tracksAfterCutoff)
-                    {
-                        if (!item.track.is_local)
-                        {
-                            var track = await _trackService.AddOrUpdateTrack(item.track);
-                            if (await _dataContext.Tracks.FindAsync(track.ID) == null)
-                            {
-                                tracksToAdd.Add(track);
-                            }
-
-                            if (tracksToAdd.Count >= bufferSize)
-                            {
-                                await _dataContext.Tracks.AddRangeAsync(tracksToAdd);
-                                await _dataContext.SaveChangesAsync();
-                                Debug.WriteLine($"Added ${tracksToAdd.Count} tracks from ${playlist.Name}");
-                                tracksToAdd.Clear();
-                            }
-
-                            recordsToAdd.Add(new TrackRecord
-                            {
-                                UserId = item.added_by.id,
-                                SpotifyID = item.track.id,
-                                PlaylistID = playlist.ID,
-                                DateAdded = DateTime.Parse(item.added_at)
-                            });
-
-                            if (recordsToAdd.Count >= bufferSize)
-                            {
-                                await _dataContext.TrackRecords.AddRangeAsync(recordsToAdd);
-                                await _dataContext.SaveChangesAsync();
-                                Debug.WriteLine($"Added ${recordsToAdd.Count} records from ${playlist.Name}");
-                                tracksToAdd.Clear();
-                            }
-                        }
-                        
-
-                        
-
-                    }
-                    
-                    if(tracksBeforeCutoff.Count() > 0)
-                    {
-                        var earliestTrackAdded = tracksBeforeCutoff.Min(t => DateTime.Parse(t.added_at));
-                        var latestTrackAdded = tracksBeforeCutoff.Max(t => DateTime.Parse(t.added_at));
-
-                        var tracksInTimeRange = await _dataContext.TrackRecords.Where(r =>
-                            r.PlaylistID == playlist.ID &&
-                            r.DateAdded >= earliestTrackAdded &&
-                            r.DateAdded <= latestTrackAdded
-                        ).ToListAsync();
-
-                        foreach(var record in tracksInTimeRange)
-                        {
-                            if (!tracksBeforeCutoff.Select(t => t.track.id).Contains(record.ID))
-                                _dataContext.TrackRecords.Remove(record);
-                        }
-                    }
-
-                    endpoint = playlistRespone.next != null ? playlistRespone.next.Replace("https://api.spotify.com/v1/", "") : null;
-
-                }
-                if (tracksToAdd.Count > 0)
-                {
-                    await _dataContext.Tracks.AddRangeAsync(tracksToAdd);
-                    Debug.WriteLine($"Added ${tracksToAdd.Count} tracks from ${playlist.Name}");
-                    tracksToAdd.Clear();
-                }
-                await _dataContext.SaveChangesAsync();
+                var recordsToRemove = _dataContext.TrackRecords.Where(r => (r.PlaylistID == playlist.ID || r.TrackListID == playlistTrackList.ID) && r.Index >= playlist.NumberOfTracks).AsQueryable();
+                _dataContext.TrackRecords.RemoveRange(recordsToRemove);
             }
+
+            // Loops until no more pages can be reached
+            while (endpoint != null)
+            {
+                // Gets playlist data from Spotify API
+                var playlistRespone = await _spotifyAPIWrapper.GetAsync<LikedSongsPage>(userID, endpoint);
+
+                foreach(var item in playlistRespone.items)
+                {
+                    if (item.track.is_local) continue;
+
+                    var track = await _trackService.AddOrUpdateTrack(item.track);
+                    if (!await _dataContext.Tracks.ContainsAsync(track))
+                        tracksToAdd.Add(track);
+
+                    if(currentSavedTracks == 0 || index >= currentSavedTracks)
+                    {
+                        recordsToAdd.Add(new TrackRecord
+                        {
+                            UserId = user.SpotifyUserID,
+                            TrackListID = playlistTrackList.ID,
+                            PlaylistID = playlist.ID,
+                            Index = index,
+                            SpotifyID = track.ID,
+                            DateAdded = DateTime.Parse(item.added_at)
+                        });
+                    }
+                    else
+                    {
+                        var record = await _dataContext.TrackRecords.FirstOrDefaultAsync(r => (r.PlaylistID == playlist.ID || r.TrackListID == playlistTrackList.ID) && r.Index == index);
+                        record.TrackListID = playlistTrackList.ID;
+                        record.PlaylistID = playlist.ID;
+                        record.Index = index;
+                        record.SpotifyID = track.ID;
+                        record.DateAdded = DateTime.Parse(item.added_at);
+                    }
+
+                    if(tracksToAdd.Count >= 50)
+                    {
+                        await _dataContext.Tracks.AddRangeAsync(tracksToAdd);
+                        await _dataContext.SaveChangesAsync();
+                        Debug.WriteLine($"Added {tracksToAdd.Count} tracks from {playlist.Name}");
+                        tracksToAdd.Clear();
+                    }
+
+                    if (recordsToAdd.Count >= 50)
+                    {
+                        await _dataContext.TrackRecords.AddRangeAsync(recordsToAdd);
+                        await _dataContext.SaveChangesAsync();
+                        Debug.WriteLine($"Added {recordsToAdd.Count} records from {playlist.Name}");
+                        recordsToAdd.Clear();
+                    }
+                    index++;
+                }
+                             
+                // Sets new endpiont
+                endpoint = playlistRespone.next != null ? playlistRespone.next.Replace("https://api.spotify.com/v1/", "") : null;
+
+                await Task.Delay(30000);
+
+            }
+
+            // Adds any leftover tracks to the database
+            if (tracksToAdd.Count > 0)
+            {
+                await _dataContext.Tracks.AddRangeAsync(tracksToAdd);
+                Debug.WriteLine($"Added {tracksToAdd.Count} tracks from {playlist.Name}");
+                tracksToAdd.Clear();
+            }
+
+            // Adds any leftover records to the database
+            if (recordsToAdd.Count > 0)
+            {
+                await _dataContext.TrackRecords.AddRangeAsync(recordsToAdd);
+                Debug.WriteLine($"Added {recordsToAdd.Count} records from {playlist.Name}");
+                recordsToAdd.Clear();
+            }
+            // Ends by saving changes
+            await _dataContext.SaveChangesAsync();
+
         }
 
 
@@ -305,7 +330,7 @@ namespace vue_spotify_app.Server
 
 
             var items = await _dataContext.TrackRecords.Where(r => r.SpotifyID == trackID && r.PlaylistID != null && r.UserId == user.SpotifyUserID).Skip(offset).Take(numberOfPlaylists).ToListAsync();
-            foreach(var item in items)
+            foreach (var item in items)
             {
                 var playlist = await _dataContext.Playlists.FindAsync(item.PlaylistID);
                 playlists.Add(new TrackPlaylistViewModel
@@ -314,21 +339,21 @@ namespace vue_spotify_app.Server
                     PlaylistName = playlist.Name,
                     DateAdded = item.DateAdded,
                     // TODO: get playlist image from database
-                    //Image = item.im
+                    Image = playlist.ImageURL
                 });
             }
 
             return (totalFoundplaylists, playlists);
         }
 
-        public async Task InitialisePlaylists(Guid userID)
+        public async Task InitialisePlaylists(User user)
         {
             const int bufferSize = 50;
             List<Playlist> playlistsToAdd = new List<Playlist>(50);
             var endpoint = $"me/playlists?offset=0&limit=50";
             while (endpoint != null)
             {
-                var playlists = await _spotifyAPIWrapper.GetAsync<PlaylistResponse>(userID, endpoint);
+                var playlists = await _spotifyAPIWrapper.GetAsync<PlaylistResponse>(user.ID, endpoint);
                 foreach (var playlist in playlists.items)
                 {
                     var imageLink = playlist.images?.FirstOrDefault(x => x.width == playlist.images.Max(y => y.width))?.url ?? string.Empty;
@@ -346,7 +371,16 @@ namespace vue_spotify_app.Server
                             ImageURL = imageLink,
                             SnapshotID = playlist.snapshot_id
                         };
+                        var playlistTrackList = new TrackList
+                        {
+                            Name = playlistEntity.Name,
+                            SortName = playlistEntity.SortName,
+                            PlaylistID = playlistEntity.ID,
+                            UserID = user.SpotifyUserID
+                        };
+                        await InitialisePlaylistTracks(user.ID, playlistEntity);
                         playlistsToAdd.Add(playlistEntity);
+                        //await _dataContext.TrackLists.AddAsync(playlistTrackList);
                     }
                     else if (playlistEntity.SnapshotID != playlist.snapshot_id)
                     {
@@ -357,16 +391,20 @@ namespace vue_spotify_app.Server
                         playlistEntity.OwnerID = playlist.owner.id;
                         playlistEntity.ImageURL = imageLink;
                         playlistEntity.SnapshotID = playlist.snapshot_id;
+
+                        //await InitialisePlaylistTracks(user.ID, playlistEntity);
                     }
+
+                    if(playlistEntity.OwnerID == user.SpotifyUserID)
+                        await InitialisePlaylistTracks(user.ID, playlistEntity);
 
                     if (playlistsToAdd.Count == bufferSize)
                     {
                         _dataContext.Playlists.AddRange(playlistsToAdd);
-                        foreach(var item in playlistsToAdd)
+                        foreach (var item in playlistsToAdd)
                         {
                             var trackList = new TrackList
                             {
-                                ID = Guid.NewGuid(),
                                 Name = item.Name,
                                 SortName = RegexHelpers.GenerateSortName(item.Name),
                                 TrackListType = TrackListType.Playlist,
@@ -375,11 +413,13 @@ namespace vue_spotify_app.Server
                             };
                             await _dataContext.TrackLists.AddAsync(trackList);
                         }
+
                         await _dataContext.SaveChangesAsync();
                         Debug.WriteLine($"Added ${playlistsToAdd.Count} playlists");
                         playlistsToAdd.Clear();
                     }
                     endpoint = playlists.next != null ? playlists.next.Replace("https://api.spotify.com/v1/", "") : null;
+                    await Task.Delay(2000);
                 }
             }
 

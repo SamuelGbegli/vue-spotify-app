@@ -58,6 +58,8 @@ namespace vue_spotify_app.Server.Data
 
         public DbSet<TrackList> TrackLists { get; set; }
 
+        public DbSet<TrackArtist> TrackArtists { get; set; }
+
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {

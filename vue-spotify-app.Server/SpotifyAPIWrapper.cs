@@ -51,6 +51,8 @@ namespace vue_spotify_app.Server
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
+                    if (response.Headers.RetryAfter?.Delta > TimeSpan.FromSeconds(10))
+                        throw new Exception($"Retry after value is unfeasibly high; currently at {response.Headers.RetryAfter.Delta / 60} minutes");
                     var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
                     await Task.Delay(retryAfter);
                     response = await SendGetMessage(endpoint, token);
@@ -76,6 +78,8 @@ namespace vue_spotify_app.Server
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
+                    if (response.Headers.RetryAfter?.Delta > TimeSpan.FromSeconds(10))
+                        throw new Exception($"Retry after value is unfeasibly high; currently at {response.Headers.RetryAfter.Delta / 60} minutes");
                     var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
                     await Task.Delay(retryAfter);
                     response = await SendGetMessage(endpoint, null);
@@ -100,6 +104,8 @@ namespace vue_spotify_app.Server
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
+                    if (response.Headers.RetryAfter?.Delta > TimeSpan.FromSeconds(10))
+                        throw new Exception($"Retry after value is unfeasibly high; currently at {response.Headers.RetryAfter.Delta / 60} minutes");
                     var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
                     await Task.Delay(retryAfter);
                     response = await SendGetMessage(endpoint, token.AccessToken);
@@ -128,6 +134,8 @@ namespace vue_spotify_app.Server
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
+                    if (response.Headers.RetryAfter?.Delta > TimeSpan.FromSeconds(10))
+                        throw new Exception($"Retry after value is unfeasibly high; currently at {response.Headers.RetryAfter.Delta / 60} minutes");
                     var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
                     await Task.Delay(retryAfter);
                     response = await SendPostMessage(endpoint, token, body);
@@ -155,6 +163,8 @@ namespace vue_spotify_app.Server
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
+                    if (response.Headers.RetryAfter?.Delta > TimeSpan.FromSeconds(10))
+                        throw new Exception($"Retry after value is unfeasibly high; currently at {response.Headers.RetryAfter.Delta / 60} minutes");
                     var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
                     await Task.Delay(retryAfter);
                     response = await SendPostMessage(endpoint, token, body);

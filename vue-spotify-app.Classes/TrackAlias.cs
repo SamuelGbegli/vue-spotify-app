@@ -27,5 +27,10 @@ namespace vue_spotify_app.Classes
         /// Stores any Spotify tracks that are deemed to be the same.
         /// </summary>
         public List<Track> Tracks { get; set; } = new List<Track>();
+        /// <summary>
+        /// Stores the ID of a "primary" track, i.e., one that will be shown in favour of any other that share the same alias.
+        /// Nullable in case there are any "empty" aliases from combining two tracks together.
+        /// </summary>
+        public string? PrimaryTrackID { get; set; }
     }
 }

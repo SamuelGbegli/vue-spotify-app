@@ -23,6 +23,14 @@ namespace vue_spotify_app.Server.Services
                     using(var scope = _scopeFactory.CreateScope())
                     {
                         var dataContext = scope.ServiceProvider.GetService<DataContext>();
+
+                        var flag = false;
+                        if (!flag)
+                        {
+                            await SeedTrackAliases.Run(dataContext);
+                            flag = true;
+                        }
+
                         for (int i = 0; i < await dataContext.Tracks.CountAsync(); i += 100)
                         {
                             var tracks =  dataContext.Tracks.Include(t => t.Artists).Skip(i).Take(100).ToList();
