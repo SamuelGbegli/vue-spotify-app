@@ -190,19 +190,17 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
   const route = useRoute()
   const router = useRouter()
 
-  // Stores the ID of the playlist whose tracks are to be fetched. If null,
-  // tracks from the Liked Songs library are fetched instead.
   const props = defineProps<{
+    // Stores the ID of the playlist whose tracks are to be fetched, if supplied.
     playlistId?: string | null,
+    // Stores the ID of the internal track whose tracks are to be fetched, if supplied.
     listId?: string | null,
-    useVirtualScrolling: boolean
+    // If true, means the table uses virtual scrolling with no pagination controls
+    useVirtualScrolling: boolean | null
   }>()
 
   // The total tracks stored in the playlist or Liked Songs library.
   const numberOftracks = ref<number | null>(null)
-
-  // The current page of tracks the user is on.
-  //const pageOffset = ref<number>(1)
 
   // The maximum number of tracks to be fetched in a single request.
   const trackLimit = ref<number>(50)
@@ -318,11 +316,13 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     }
   ];
 
-  // Generates the columns visible based on whether a playlist ID is provided.
+  // Generates the columns visible based on whether an ID is provided.
   const columns = computed(() => {
+    // Hides "In liked songs?" column if no ID is provided
     if (props.playlistId == null && props.listId == null) {
       return baseColumns.filter(x => x.name !== "inLikedSongs");
     }
+    // Returns all columns if either a playlist ID or internal list ID is provided
     return baseColumns;
   });
 
@@ -335,8 +335,7 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     descending: false
   });
 
-  onBeforeMount(async () => {
-    //console.log("Section called");
+  onBeforeMount(async () => {   
     onRouteUpdate();
   })
 
@@ -361,14 +360,15 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     await getTracks(false, true);
   }
 
+  // Function to get tracks from the server
   async function getTracks(addToTop: boolean = false, reset = false, batchIndexes: number[] | null = null) {
 
     console.log(route.query, pagination.value.page);
-    //pageOffset.value = route.query.page ? parseInt(route.query.page.toString()) : 1
-    trackQuery.value = route.query.trackQuery ? route.query.trackQuery.toString() : ""
 
+    // Sets status code to null to show loading
     statusCode.value = null;
 
+    // Clears batches and sets page to 1 if reset flag is called 
     if (reset) {
       pagination.value.page = 1;
       trackBatches.value = [];
@@ -376,8 +376,11 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
 
     try {
       console.log("page " + pagination.value.page);
+      // Creates new search parameters
       const query = new URLSearchParams();
+      // Adds playlist ID to query if included
       if (!!props.playlistId) query.append("playlistId", props.playlistId.toString());
+      // Adds internal list ID to query if included
       if (!!props.listId) query.append("listId", props.listId.toString());
       if (batchIndexes != null && props.useVirtualScrolling) {
         batchIndexes.forEach(x =>{
@@ -385,40 +388,58 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
         })
       }
       else query.append("offset", ((pagination.value.page - 1) * pagination.value.rowsPerPage).toString());
-      query.append("numberOfTracks", trackLimit.value.toString());
+      // Adds the number of tracks to be returned to query
+      query.append("numberOfTracks", pagination.value.rowsPerPage.toString());
+      // Adds query from filter if included
       if (filter.value.query !== null && filter.value.query.match(/^ *$/) == null) query.append("query", filter.value.query);
+      // Adds filter value to search for the track's name
       query.append("searchName", filter.value.searchName.toString());
+      // Adds filter value to search for the track's artists
       query.append("searchArtist", filter.value.searchArtist.toString());
+      // Adds filter value to search for the track's album name
       query.append("searchAlbum", filter.value.searchAlbum.toString());
+      // Adds filter value for the minimum date saved value for tracks
       if (filter.value.dateRangeFrom != null) query.append("dateRangeFrom", filter.value.dateRangeFrom.toString());
+      // Adds filter value for the maximum date saved value for tracks
       if (filter.value.dateRangeTo != null) query.append("dateRangeTo", filter.value.dateRangeTo.toString());
+      // Adds filter value for results sort type
       query.append("sortType", filter.value.sortType.toString());
+      // Adds filter value for results sort order
       query.append("sortOrder", filter.value.sortOrder.toString());
 
+      // Makes call to backend
       const response = await axios.get(`/api/track/gettracks?${query.toString()}`);
-
+      // Updates number of tracks in the backend value
       numberOftracks.value = response.data.totalTracks
       pagination.value.rowsNumber = response.data.totalTracks;
       console.log(response.data);
 
+      // Sets returned tracks if virtual scrolling is disabled
      if(!props.useVirtualScrolling)
      {
-        const batch = response.data as TrackViewModelBatch;
-        console.log(batch);
         trackBatches.value = response.data.tracks as TrackViewModelBatch[];
-        console.log(batch);
      }
      else {
+      // Section if batch indexes were provided
       if (batchIndexes != null){
+
+        // Array to store track batches returned
       const updatedBatches: TrackViewModelBatch[] = [];
+
+      // Foreach loop for all batches
       response.data.tracks.forEach(x =>{
+        // Initialises batch
         const batch = new TrackViewModelBatch();
+        // Sets batch index
         batch.batchIndex = x.batchIndex;
+        // Pushes track view models to batch
         x.trackViewModels.forEach((y: any) => {
           batch.trackViewModels.push(new TrackViewModel(y));
         });
         updatedBatches.push(batch);
       });
+
+      // Sets track batches
       trackBatches.value = updatedBatches;
       console.log(trackBatches.value);
      }
@@ -506,10 +527,10 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     }
     filter.value.sortOrder = descending ? SortOrder.Descending : SortOrder.Ascending;
 
-    await getTracks(false, false, trackBatches.value.map(x => x.batchIndex));
-
     pagination.value.sortBy = sortBy;
     pagination.value.descending = descending;
+
+    await updateFilter();
   }
 
   function copyTrackIdToClipboard(trackId: string) {
@@ -541,7 +562,8 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     if(!!props.playlistId) router.push(`/playlists/${props.playlistId}?${query.toString()}`);
     else if (!!props.listId) router.push(`/tracklists/${props.listId}?${query.toString()}`);
     else router.push(`/?${query.toString()}`);
-    await getTracks(false, true);
+    
+    await getTracks(false, false, trackBatches.value.map(x => x.batchIndex));
   }
 
   function openQueueDialog(track: TrackViewModel) {

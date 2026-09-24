@@ -43,7 +43,7 @@ builder.Services.AddScoped<TrackListService>();
 builder.Services.AddHostedService<SyncPlaybackRecordService>();
 builder.Services.AddHostedService<SyncLikedSongsLibraryService>();
 builder.Services.AddHostedService<SyncTracksWithPlaybackHistoryService>();
-//builder.Services.AddHostedService<SyncPlaylistService>();
+builder.Services.AddHostedService<SyncPlaylistService>();
 builder.Services.AddHostedService<SyncTrackAliasService>();
 builder.Services.AddHostedService<SyncTracksService>();
 

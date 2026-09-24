@@ -370,7 +370,7 @@ namespace vue_spotify_app.Server
                                           URI = t.SpotifyURI,
                                           ExternalURL = t.ExternalURL,
                                           AlbumName = t.Album.Name,
-                                          AlbumCover = t.Album.AlbumCover.Link,
+                                          AlbumCover = t.Album.AlbumCover?.Link ?? string.Empty,
                                           AlbumURI = t.Album.SpotifyURI,
                                           AlbumExternalURL = t.Album.ExternalURL,
                                           Length = t.Length,

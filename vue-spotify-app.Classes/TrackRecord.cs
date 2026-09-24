@@ -42,5 +42,7 @@ namespace vue_spotify_app.Classes
         /// The list the track is saved to.
         /// </summary>
         public TrackList? TrackList { get; set; }
+
+        public int? Index { get; set; }
     }
 }

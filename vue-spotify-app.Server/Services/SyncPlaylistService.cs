@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using vue_spotify_app.Classes;
 using vue_spotify_app.Server.Data;
 
 namespace vue_spotify_app.Server.Services
@@ -22,22 +23,20 @@ namespace vue_spotify_app.Server.Services
             {
                 try
                 {
-                    List<Guid> userIDs;
+                    List<User> users;
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-                        userIDs = await dataContext.Users.AsNoTracking().Select(u => u.ID).ToListAsync(stoppingToken);
+                        users = await dataContext.Users.AsNoTracking().ToListAsync(stoppingToken);
 
-                        foreach (var id in userIDs)
+                        foreach (var user in users)
                         {
                             if (stoppingToken.IsCancellationRequested) break;
                             using (var userScope = _scopeFactory.CreateScope())
                             {
                                 var playlistService = scope.ServiceProvider.GetRequiredService<PlaylistService>();
-                                await playlistService.InitialisePlaylists(id);
-                                await Task.Delay(TimeSpan.FromMinutes(3), stoppingToken);
-                                await playlistService.InitialisePlaylistTracks(id);
-                                await Task.Delay(TimeSpan.FromMinutes(10));
+                                await playlistService.InitialisePlaylists(user);
+                                await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
                             }
                         }
                     }
