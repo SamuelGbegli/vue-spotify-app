@@ -43,8 +43,8 @@ router.beforeEach(async (to) => {
       //Gets profile
       const profileResponse = await axios.get('/api/auth/me')
 
-      authStore.setUserName(profileResponse.data.DisplayName)
-      authStore.setAvatar(profileResponse.data.ProfileImageLink)
+      authStore.setUserName(profileResponse.data.displayName)
+      authStore.setAvatar(profileResponse.data.profileImageLink)
       authStore.setLoggedIn(200)
 
       const url = new URL(window.location.href)

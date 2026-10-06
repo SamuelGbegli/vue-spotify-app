@@ -1,4 +1,5 @@
-import Artist from "./artist";
+import ArtistViewModel from "./artistViewModel";
+
 
 // View model for displaying information regarding a track played on Spotify.
 export default class PlaybackRecordViewModel{
@@ -7,9 +8,9 @@ export default class PlaybackRecordViewModel{
   // The name of the track.
   name: string = "";
   // The external URL to the track on Spotify.
-  trackUrl: string = "";
+  trackURL: string = "";
   // A list of artists credited with the track.
-  artists: Artist[] = [];
+  artists: ArtistViewModel[] = [];
   // The name of the album the track belongs to.
   albumName: string = "";
   // The external URL to the album on Spotify.
@@ -24,7 +25,7 @@ export default class PlaybackRecordViewModel{
   initialiseData(data){
     this.datePlayed = new Date(data.datePlayed);
     this.name = data.name;
-    this.trackUrl = data.trackURL;
+    this.trackURL = data.trackURL;
     this.albumName = data.albumName;
     this.albumLink = data.albumLink;
     this.albumCover = data.albumCover;
@@ -32,7 +33,7 @@ export default class PlaybackRecordViewModel{
     this.spotifyID = data.spotifyID;
 
     data.artists.forEach(element => {
-      const artist = new Artist();
+      const artist = new ArtistViewModel();
       artist.name = element.name;
       artist.externalURL = element.externalURL;
       this.artists.push(artist);

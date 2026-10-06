@@ -20,16 +20,16 @@ namespace vue_spotify_app.Server.Controllers
             _dataContext = dataContext;
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("getplaylists")]
-        public async Task<IActionResult> GetPlaylists([FromQuery]int offset = 0, [FromQuery]int numberOfPlaylists = 0)
+        public async Task<IActionResult> GetPlaylists([FromBody] PlaylistFilter filter)
         {
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
 
-                var data = await _playlistService.GetPlaylists(user, offset, numberOfPlaylists);
+                var data = await _playlistService.GetPlaylists(user, filter);
 
                 return Ok(new
                 {

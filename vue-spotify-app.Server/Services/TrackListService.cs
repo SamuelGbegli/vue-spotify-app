@@ -96,8 +96,9 @@ namespace vue_spotify_app.Server.Services
             }
         }
 
-        public async Task AddTracksToList(User user, Guid listId, List<string> trackIDs, CancellationToken cancellationToken = default)
+        public async Task<int> AddTracksToList(User user, Guid listId, List<string> trackIDs, CancellationToken cancellationToken = default)
         {
+            int addedTracks = 0;
             var trackList = await _dataContext.TrackLists
                 .Where(tl => tl.UserID == user.SpotifyUserID && tl.ID == listId)
                 .FirstAsync(cancellationToken);
@@ -105,28 +106,37 @@ namespace vue_spotify_app.Server.Services
             {
                 foreach (var trackID in trackIDs)
                 {
-                    if(_dataContext.TrackRecords.Any(tr => tr.TrackListID == listId && tr.SpotifyID == trackID)) continue; // Skip if the track is already in the list
-                    else
+                    try
                     {
-                        if(await _dataContext.Tracks.FirstOrDefaultAsync(t => t.ID == trackID, cancellationToken) == null)
+                        if (_dataContext.TrackRecords.Any(tr => tr.TrackListID == listId && tr.SpotifyID == trackID)) continue; // Skip if the track is already in the list
+                        else
                         {
-                            var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
-                            await _trackService.AddOrUpdateTrack(track);
-                            await Task.Delay(50); // Delay to avoid hitting rate limits
+                            if (await _dataContext.Tracks.FirstOrDefaultAsync(t => t.ID == trackID, cancellationToken) == null)
+                            {
+                                var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
+                                await _trackService.AddOrUpdateTrack(track);
+                                await Task.Delay(50); // Delay to avoid hitting rate limits
+                            }
                         }
+                        var trackRecord = new TrackRecord
+                        {
+                            UserId = user.SpotifyUserID,
+                            TrackListID = listId,
+                            SpotifyID = trackID,
+                            DateAdded = DateTime.Now
+                        };
+                        _dataContext.TrackRecords.Add(trackRecord);
+                        addedTracks++;
                     }
-                    var trackRecord = new TrackRecord
+                    catch
                     {
-                        UserId = user.SpotifyUserID,
-                        TrackListID = listId,
-                        SpotifyID = trackID,
-                        DateAdded = DateTime.Now
-                    };
-                    _dataContext.TrackRecords.Add(trackRecord);
+
+                    }
                 }
                 trackList.DateModified = DateTime.Now;
                 await _dataContext.SaveChangesAsync(cancellationToken);
             }
+            return addedTracks;
         }
 
         public async Task RemoveTracksFromList(User user, Guid listId, List<string> trackIDs, CancellationToken cancellationToken = default)

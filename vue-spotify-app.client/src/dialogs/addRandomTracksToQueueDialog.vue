@@ -271,6 +271,7 @@ import TrackListDTO from '@/classes/trackListDTO';
                 color: "green"
                 });
         onDialogOK({
+            trackIDs: trackIDs,
             numberOfTracks: tracksToAdd.value.length,
             removeSelectedTracks: removeSelectedTracks.value
         });

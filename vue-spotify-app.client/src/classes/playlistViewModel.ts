@@ -15,4 +15,5 @@ export default class PlaylistViewModel{
 
   externalURL: string = "";
 
+  isUserMadePlaylist: boolean = false;
 }

@@ -43,5 +43,9 @@ namespace vue_spotify_app.Classes
         /// A link to the playlist on Spotify.
         /// </summary>
         public string ExternalURL { get; set; }
+        /// <summary>
+        /// If true, means the user made the playlist and view individual tracks in the application.
+        /// </summary>
+        public bool IsUserMadePlaylist { get; set; }
     }
 }

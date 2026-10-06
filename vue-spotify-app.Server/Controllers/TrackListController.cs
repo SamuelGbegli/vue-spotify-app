@@ -123,8 +123,10 @@ namespace vue_spotify_app.Server.Controllers
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
-                await _trackListService.AddTracksToList(user, dto.ListID, dto.TrackIDs);
-                return NoContent();
+                int addedTracks = await _trackListService.AddTracksToList(user, dto.ListID, dto.TrackIDs);
+                return Ok(new { 
+                    addedTracks
+                });
             }
             catch (Exception ex)
             {

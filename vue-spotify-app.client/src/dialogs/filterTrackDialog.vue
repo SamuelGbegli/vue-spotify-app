@@ -1,5 +1,5 @@
 <template>
-  <QDialog ref="dialogRef" backdrop-filter="blur(4px)">
+  <QDialog ref="dialogRef" persistent backdrop-filter="blur(4px)">
     <QCard class="q-dialog-plugin">
       <QCardSection class="row items-center q-pb-none">
         <div class="text-h6">Sort and Filter Tracks</div>

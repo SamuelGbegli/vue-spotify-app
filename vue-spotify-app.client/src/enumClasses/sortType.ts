@@ -4,7 +4,7 @@ const SortType = {
   Album: 2,
   TrackLength: 3,
   DateAdded: 4,
-  DateLastPlayed: 5,
+  DateLastPlayed: 5
 }
 
 export default SortType;

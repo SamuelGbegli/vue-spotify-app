@@ -61,7 +61,7 @@
           <!--Column for track name-->
           <template v-slot:body-cell-name="props">
             <q-td :props="props">
-              <a :href="props.row.trackUrl">{{ props.row.name }}</a>
+              <a :href="props.row.trackURL">{{ props.row.name }}</a>
             </q-td>
           </template>
           <!--Column for track artists-->
@@ -429,7 +429,7 @@ import { useRoute, useRouter } from 'vue-router';
     try {
       // Makes call to the API
       const response = await axios.get(
-        `/api/playbackrecord/getrecords?${searchParams}`,
+        `/api/playbackrecord/getrecords?${searchParams}`
       );
 
       // Clears the playback records array
@@ -439,8 +439,10 @@ import { useRoute, useRouter } from 'vue-router';
       response.data.records.forEach(element => {
         const viewModel = new PlaybackRecordViewModel();
         viewModel.initialiseData(element);
-        playbackRecords.value.push(viewModel);
+        playbackRecords.value.push(element as PlaybackRecordViewModel[]);
       });
+
+      playbackRecords.value = response.data.records as PlaybackRecordViewModel[];
 
       // Sets the total number of records and current page for the table
       individualPagination.value.rowsNumber = response.data.totalRecords;
@@ -450,6 +452,7 @@ import { useRoute, useRouter } from 'vue-router';
       totalPages.value = Math.ceil(response.data.totalRecords / 50);
       // Sets the status code to the response status to hide the loading spinner
       statusCode.value = response.status;
+      console.log (response.data);
     }
     catch (ex) {
       // Section if something goes wrong
@@ -457,7 +460,7 @@ import { useRoute, useRouter } from 'vue-router';
       const error = ex as AxiosError;
       // Sets error status code to hide loading spinner
       statusCode.value = error.status;
-      console.log(error);
+      console.log(error, error.response?.data);
     }
   }
 
@@ -492,19 +495,9 @@ import { useRoute, useRouter } from 'vue-router';
 
     try {
       // Makes call to the API
-      const response = await axios.get(`/api/playbackrecord/getTrackFoundRecords?${searchParams}`, {
-        headers: {
-          authToken: authStore.accessToken
-        }
-      });
+      const response = await axios.get(`/api/playbackrecord/getTrackFoundRecords?${searchParams}`);
 
-      // Clears the grouped playback records array
-      groupedPlaybackRecords.value = [];
-      // Creates a view model for each data element returned from the API, which are pushed to the array
-      response.data.records.forEach(element => {
-        const viewModel = new TrackViewModel(element);
-        groupedPlaybackRecords.value.push(viewModel);
-      });
+      groupedPlaybackRecords.value = response.data.records as TrackViewModel[];
 
       // Sets the total number of records and current page for the table
       groupPagination.value.rowsNumber = response.data.totalRecords;
