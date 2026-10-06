@@ -202,8 +202,10 @@ namespace vue_spotify_app.Server
 
             var query =
                 from tr in _dataContext.TrackRecords
-                join t in _dataContext.Tracks
+                join t in _dataContext.Tracks.Include(t => t.Artists)
                     on tr.SpotifyID equals t.ID
+                join a in _dataContext.Albums
+                    on t.AlbumID equals a.ID
                 where tr.UserId == spotifyUserID
                     && tr.TrackListID == listID
                 select new
@@ -211,7 +213,9 @@ namespace vue_spotify_app.Server
                     TrackID = t.ID,
                     t.Name,
                     t.SortName,
+                    Artists = t.Artists.Select(a => a.Name),
                     t.ArtistSortName,
+                    AlbumName = a.Name,
                     t.AlbumSortName,
                     t.Length,
                     t.AliasID,
@@ -250,9 +254,9 @@ namespace vue_spotify_app.Server
 
                 // Filters query depending on selected fields
                 query = query.Where(t =>
-                    ((filter.SearchName || searchAll) && t.Name.Contains(search))); //||
-                                                                                    //((filter.SearchArtist || searchAll) && t.Artists.Any(a => a.Name.Contains(search))) ||
-                                                                                    // ((filter.SearchAlbum || searchAll) && t.Album.Name.Contains(search)));
+                    ((filter.SearchName || searchAll) && t.Name.Contains(search)) ||
+                    ((filter.SearchArtist || searchAll) && t.Artists.Any(a => a.Contains(search))) ||
+                    ((filter.SearchAlbum || searchAll) && t.AlbumName.Contains(search)));
             }
 
             if (filter.DateRangeFrom.HasValue && filter.DateRangeTo.HasValue)
@@ -416,46 +420,66 @@ namespace vue_spotify_app.Server
         /// <param name="singlePageOnly">If set to true, only the first page of liked tracks will be retrieved. Defaults to false.</param>
         public async Task InitialiseTracks(Guid userID, string? apiUrl = "me/tracks?limit=50", bool singlePageOnly = false, CancellationToken cancellationToken = default)
         {
-
+            // Gets the user's account based on supplied ID
             var user = await _dataContext.Users.Include(u => u.SpotifyToken).FirstOrDefaultAsync(u => u.ID == userID, cancellationToken);
+            // Exits if the user or Spotify token is non-existant
             if (user == null || user.SpotifyToken == null) return;
+            // Returns internal track list for the user's Liked Songs library
             var likedSongsList = await _dataContext.TrackLists.FirstOrDefaultAsync(l => l.UserID == user.SpotifyUserID && l.TrackListType == TrackListType.LikedSongs, cancellationToken);
-            foreach (var track in await _dataContext.TrackRecords.Where(t => t.TrackListID == likedSongsList.ID).ToListAsync())
+            // Gets all tracks that were saved into the user's Liked Songs library
+            var userLikedSongs = _dataContext.TrackRecords.Where(t => t.TrackListID == likedSongsList.ID && t.UserId == user.SpotifyUserID).AsQueryable();
+
+            var idsToCheck = new StringBuilder();
+
+            //Loops through every track record
+            for (int i = 0; i < userLikedSongs.Count(); i+= 40)
             {
-                var isInLikedSongs = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/tracks/contains?ids={track.SpotifyID}");
-                if (isInLikedSongs.Length > 0 && !isInLikedSongs[0])
+                var ids = userLikedSongs.Skip(i).Take(40).Select(t => t.SpotifyID);
+
+                //Makes API call to check items in Liked Songs library
+                var likedSongsRequest = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/library/contains?uris={string.Join(",",ids.Select(t => $"spotify:track:{t}"))}");
+                if (likedSongsRequest.Length > 0)
                 {
-                    var trackRecord = await _dataContext.TrackRecords.FirstOrDefaultAsync(r => r.SpotifyID == track.SpotifyID && r.TrackListID == likedSongsList.ID, cancellationToken);
-                    if (trackRecord != null)
+                    for (int j = 0; j < ids.Count(); j++)
                     {
-                        _dataContext.TrackRecords.Remove(trackRecord);
+                        if (likedSongsRequest[j] == false)
+                        {
+                            var trackRecord = await _dataContext.TrackRecords.FirstOrDefaultAsync(r => r.SpotifyID == ids.ElementAt(j) && r.TrackListID == likedSongsList.ID, cancellationToken);
+                            if (trackRecord != null)
+                            {
+                                _dataContext.TrackRecords.Remove(trackRecord);
+                            }
+                        }
                     }
                 }
+                await Task.Delay(50);
             }
 
             int offset = 0;
 
             while (apiUrl != null && !cancellationToken.IsCancellationRequested)
             {
-                // Get liked songs page
+                // Gets liked songs page
                 var likedSongs = await _spotifyAPIWrapper.GetAsync<LikedSongsPage>(user.ID, apiUrl);
-                // Process each liked song
+                // Processes each liked song
                 foreach (var item in likedSongs.items)
                 {
                     if (!item.track.is_local)
                     {
-                        if(await _dataContext.TrackRecords.CountAsync(r => r.SpotifyID == item.track.id && r.TrackListID == likedSongsList.ID) > 0)
-                        {
-                            await _dataContext.SaveChangesAsync(cancellationToken);
-                            return;
-                        }
+                        //if(await _dataContext.TrackRecords.CountAsync(r => r.SpotifyID == item.track.id && r.TrackListID == likedSongsList.ID) > 0)
+                        //{
+                        //    await _dataContext.SaveChangesAsync(cancellationToken);
+                        //    return;
+                        //}
                         var track = await AddOrUpdateTrack(item.track);
                         
                         if (await _dataContext.Tracks.FindAsync(track.ID) == null)
                         {
                             await _dataContext.Tracks.AddAsync(track);
                         }
-                        if (!await _dataContext.TrackRecords.AnyAsync(t => t.UserId == user.SpotifyUserID && t.SpotifyID == track.ID && t.PlaylistID == null))
+
+
+                        if (!await _dataContext.TrackRecords.AnyAsync(t => t.UserId == user.SpotifyUserID && t.SpotifyID == track.ID && t.TrackListID == likedSongsList.ID))
                         {
                             var trackRecord = new TrackRecord
                             {
@@ -473,6 +497,7 @@ namespace vue_spotify_app.Server
                 {
                     apiUrl = null;
                 }
+                // Alters API endpoint to fetch next page of tracks
                 else
                 {
                     offset += likedSongs.limit;
@@ -480,12 +505,6 @@ namespace vue_spotify_app.Server
                 }
 
                 await _dataContext.SaveChangesAsync(cancellationToken);
-                //Handle pagination
-                // If only a single page is to be processed, break the loop
-                if (singlePageOnly)
-                {
-                    break;
-                }
             }
         }
 
@@ -629,13 +648,13 @@ namespace vue_spotify_app.Server
                     Artists = albumArtists,
                     SpotifyURI = album.uri,
                     ExternalURL = album.external_urls.spotify,
-                    AlbumType = album.type
-                };
-                albumEntity.AlbumCover = new Classes.AlbumCover
-                {
-                    Height = (int)album.images[0].height,
-                    Width = (int)album.images[0].width,
-                    Link = album.images[0].url
+                    AlbumType = album.type,
+                    AlbumCover = new AlbumCover
+                    {
+                        Height = (int)album.images[0].height,
+                        Width = (int)album.images[0].width,
+                        Link = album.images[0].url
+                    }
                 };
                 await _dataContext.Albums.AddAsync(albumEntity);
 
@@ -669,6 +688,12 @@ namespace vue_spotify_app.Server
                     Album = albumEntity,
                     AlbumSortName = albumEntity.SortName,
                     Artists = trackArtists,
+                    TrackArtists = trackArtists.Select(a => new TrackArtist
+                    {
+                        ArtistID = a.ID,
+                        TrackID = track.id,
+                        Index = trackArtists.IndexOf(a)
+                    }).ToList(),
                     ArtistSortName = trackArtists.First().SortName,
                     SpotifyURI = track.uri,
                     ExternalURL = track.external_urls.spotify,

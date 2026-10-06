@@ -29,6 +29,8 @@
           :rows="trackViewModels"
           :columns="columns"
           row-key="id"
+          selection="multiple"
+          v-model:selected="selectedTracks"
           wrap-cells
           :loading="statusCode === null"
           :virtual-scroll="props.useVirtualScrolling"
@@ -40,9 +42,10 @@
           @request="onRequest">
     <template v-slot:top>
       <div class="col q-pa-sm q-gutter-sm">
-      <div class="row">
+      <div class="row q-gutter-md">
         <div class="q-table__title" v-if="trackBatches.length > 0">Total tracks: {{ pagination.rowsNumber }}</div>
         <QSpace />
+        <QBtn v-if="props.listId" label="Add tracks" color="primary" @click="openAddTrackDialog()"/>
         <QBtn label="Filter and sort tracks" color="primary" @click="openFilterAndSortDialog()" />
       </div>
       <div class="row items-center">
@@ -185,6 +188,7 @@
   import SortType from '@/enumClasses/sortType';
   import AddRandomTracksToQueueDialog from '@/dialogs/addRandomTracksToQueueDialog.vue';
 import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
+import AddTracksToListDialog from '@/dialogs/addTracksToListDialog.vue';
 
   const authStore = useAuthStore()
   const route = useRoute()
@@ -196,7 +200,7 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     // Stores the ID of the internal track whose tracks are to be fetched, if supplied.
     listId?: string | null,
     // If true, means the table uses virtual scrolling with no pagination controls
-    useVirtualScrolling: boolean | null
+    useVirtualScrolling: boolean | undefined
   }>()
 
   // The total tracks stored in the playlist or Liked Songs library.
@@ -204,8 +208,6 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
 
   // The maximum number of tracks to be fetched in a single request.
   const trackLimit = ref<number>(50)
-
-  const trackQuery = ref<string>("")
 
   // Stores batches of tracks fetched from the server.
   const trackBatches = ref<TrackViewModelBatch[]>([])
@@ -228,8 +230,7 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
   // Stores a filter that is applied when fetching tracks.
   const filter = ref<TrackFilter>(new TrackFilter());
 
-  // Stores the total tracks found in the backend that matches the filter.
-  const total = ref<number>(0);
+  const selectedTracks = ref([]);
 
   // Represents the columns to be displayed in the table.
   const baseColumns = [
@@ -347,7 +348,6 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
   // Handles changes to the filter if the route changes. Called when the page is
   // loaded or the user resubmits the page's URL.
   async function onRouteUpdate() {
-    console.log(typeof (route.query.sort));
     if (route.query.page) pagination.value.page = parseInt(route.query.page.toString());
     if (route.query.query) filter.value.query = route.query.query.toString();
     if (route.query.searchName) filter.value.searchName = route.query.searchName.toString() === "true";
@@ -640,8 +640,12 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
     }).onOk(async (data) => {
       if(data.removeSelectedTracks) {
         const newTotalTracks = pagination.value.rowsNumber - data.numberOfTracks;
-        pagination.value.page = Math.ceil(newTotalTracks / pagination.value.rowsPerPage);
-        await getTracks();
+        if(Math.ceil(newTotalTracks / pagination.value.rowsPerPage) < pagination.value.page)
+          pagination.value.page--;
+        if(!trackBatches.value.map(b => b.trackViewModels).flat().map(t => t.id).every(t =>
+          !data.trackIDs.includes(t)
+        ))          
+          await getTracks();
       }
     });
   }
@@ -656,13 +660,26 @@ import DeleteTracksDialog from '@/dialogs/deleteTracksDialog.vue';
       }
     }).onOk(async () => {
     
+      console.log(trackBatches.value.flat().map(b => b.trackViewModels.map(t => t.id)));
+
         const newTotalTracks = pagination.value.rowsNumber - 1;
-        pagination.value.page = Math.ceil(newTotalTracks / pagination.value.rowsPerPage);
-        await getTracks();
+          if(Math.ceil(newTotalTracks / pagination.value.rowsPerPage) < pagination.value.page)
+          pagination.value.page--;
+        
+          if(trackBatches.value.map(b => b.trackViewModels).flat().map(t => t.id).includes(track.id))          
+            await getTracks();
       }
     )
   }
   
+  function openAddTrackDialog(){
+    Dialog.create({
+      component: AddTracksToListDialog,
+      componentProps: {
+        listID: props.listId
+      }
+    }).onOk(async () => await getTracks());
+  }
 
 </script>
 <style lang="css">

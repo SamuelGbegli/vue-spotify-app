@@ -25,7 +25,6 @@
     });
 
     window.location.href = response.data;
-    console.log(response)
   }
 
 

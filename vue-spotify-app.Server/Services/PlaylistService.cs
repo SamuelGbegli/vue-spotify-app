@@ -7,6 +7,7 @@ using vue_spotify_app.Classes;
 using vue_spotify_app.Classes.APIData;
 using vue_spotify_app.Classes.SortNameHelpers;
 using vue_spotify_app.Server.Data;
+using static System.Net.WebRequestMethods;
 
 namespace vue_spotify_app.Server
 {
@@ -24,30 +25,47 @@ namespace vue_spotify_app.Server
         }
 
         // TODO: refactor to cache playlists in database and only call API to update playlists that have been modified since last fetch
-        public async Task<(int, List<PlaylistViewModel>)> GetPlaylists(User user, int offset, int numberOfPlaylists, bool getUserEditablePlaylists = false)
+        public async Task<(int, List<PlaylistViewModel>)> GetPlaylists(User user, PlaylistFilter playlistFilter)
         {
-            var viewModels = new List<PlaylistViewModel>();
 
             // Gets playlists from database
-            var playlists = getUserEditablePlaylists ? _dataContext.Playlists.Where(p => p.OwnerID == user.SpotifyUserID).Skip(offset).Take(numberOfPlaylists).AsQueryable() : _dataContext.Playlists.Skip(offset).Take(numberOfPlaylists).AsQueryable();
-            var totalPlaylists = getUserEditablePlaylists ? await _dataContext.Playlists.CountAsync(p => p.OwnerID == user.SpotifyUserID) : await _dataContext.Playlists.CountAsync();
+            var query = _dataContext.Playlists.AsQueryable();
 
-            // Converts each playlist into a view model
-            foreach (var playlist in playlists)
+            // Applies search filter to query
+            if (!string.IsNullOrWhiteSpace(playlistFilter.Query))
+                query = query.Where(p => p.Name.ToLower().Contains(playlistFilter.Query.ToLower()));
+
+            if (playlistFilter.ReturnUserPlaylistsOnly)
+                query = query.Where(p => p.OwnerID == user.SpotifyUserID);
+
+            switch (playlistFilter.SortType)
             {
-                var viewModel = new PlaylistViewModel
-                {
-                    ID = playlist.ID,
-                    Name = playlist.Name,
-                    NumberOfTracks = playlist.NumberOfTracks,
-                    OwnerName = playlist.OwnerName,
-                    //                        OwnerLink = playlist.,
-                    ExternalURL = $"https://open.spotify.com/playlist/{playlist.ID}",
-                    ImageLink = playlist.ImageURL
-                };
-                viewModels.Add(viewModel);
-
+                case PlaylistSortType.Name:
+                    query = playlistFilter.SortOrder == SortOrder.Descending ? query.OrderByDescending(p => p.SortName) :
+                        query.OrderBy(p => p.SortName);
+                    break;
+                case PlaylistSortType.NumberOfTracks:
+                    query = playlistFilter.SortOrder == SortOrder.Descending ? query.OrderByDescending(p => p.NumberOfTracks).ThenBy(p => p.SortName) :
+                        query.OrderBy(p => p.NumberOfTracks).ThenBy(p => p.SortName);
+                    break;
             }
+
+            var totalPlaylists = await query.CountAsync();
+
+            var playlists = await query.Skip((playlistFilter.Page - 1) * playlistFilter.NumberOfPlaylists).Take(playlistFilter.NumberOfPlaylists).ToListAsync();
+
+            var viewModels = playlists.Select(p => new PlaylistViewModel
+            {
+                ID = p.ID,
+                Name = p.Name,
+                NumberOfTracks = p.NumberOfTracks,
+                OwnerName = p.OwnerName,
+                //                        OwnerLink = playlist.,
+                ExternalURL = $"https://open.spotify.com/playlist/{p.ID}",
+                ImageLink = p.ImageURL,
+                IsUserMadePlaylist = p.OwnerID == user.SpotifyUserID
+            }).ToList();
+
             return (totalPlaylists, viewModels);
         }
 

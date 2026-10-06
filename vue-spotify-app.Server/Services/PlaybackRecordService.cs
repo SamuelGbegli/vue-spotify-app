@@ -192,46 +192,39 @@ namespace vue_spotify_app.Server
                 .Take(numberOfRecords)
                 .ToListAsync();
 
-            var viewModels = new List<PlaybackRecordViewModel>();
+            var recordTrackIds = records.Select(r => r.SpotifyID);
 
-
-            foreach (var record in records)
-            {
-                // Deserialize JSON response to object
-                var track = await _dataContext.Tracks
-                .Include(t => t.Artists)
+            var tracks = await _dataContext.Tracks
+                .Where(t => recordTrackIds.Contains(t.ID))
+                .Include(t => t.TrackArtists)
+                .ThenInclude(ta => ta.Artist)
                 .Include(t => t.Album)
-                .ThenInclude(a => a.AlbumCover)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.ID == record.SpotifyID);
+                .ThenInclude(ta => ta.AlbumCover)
+                .ToListAsync();
 
+            var viewModels = records.Select(r =>
+            {
+                var track = tracks.FirstOrDefault(t => t.ID == r.SpotifyID);
                 var viewModel = new PlaybackRecordViewModel
                 {
-                    DatePlayed = record.DatePlayed,
+                    SpotifyID = r.SpotifyID,
                     Name = track.Name,
-                    TrackURL = track.ExternalURL,
-                    Artists = track.Artists.Select(a => new Classes.Artist
-                    {
-                        Name = a.Name,
-                        ExternalURL = a.ExternalURL
-                    }).ToList(),
+                    AlbumCover = track.Album.AlbumCover.Link,
                     AlbumName = track.Album.Name,
                     AlbumLink = track.Album.ExternalURL,
-                    AlbumCover = track.Album.AlbumCover.Link,
-                    SpotifyID = track.ID
+                    TrackURL = track.ExternalURL,
+                    DatePlayed = r.DatePlayed,
+                    Artists = track.TrackArtists.OrderBy(ta => ta.Index).Select(ta => new ArtistViewModel
+                    {
+                        ID = ta.ArtistID,
+                        Name = ta.Artist.Name,
+                        ExternalURL = ta.Artist.ExternalURL,
+                        Index = ta.Index
+                    }).ToList()
                 };
 
-                var likedSongsAliasIDs = 
-                    from t in _dataContext.Tracks
-                    join tr in _dataContext.TrackRecords on t.ID equals tr.SpotifyID
-                    where tr.PlaylistID == null && tr.UserId == user.SpotifyUserID
-                    select t.AliasID;
-
-
-                viewModel.IsInLikedSongs = likedSongsAliasIDs.Contains(track.AliasID);
-                viewModels.Add(viewModel);
-            }
-
+                return viewModel;
+            }).ToList();
 
             return (totalRecords, viewModels);
         }
@@ -375,13 +368,13 @@ namespace vue_spotify_app.Server
 
             var groupedQuery =
                 from r in query
-                join t in _dataContext.Tracks
+                join t in _dataContext.Tracks.Include(t => t.Alias)
                     on r.SpotifyID equals t.ID
                 group r by t.AliasID into g
                 select new
                 {
                     AliasID = g.Key,
-                    Count = g.Count()                   
+                    Count = g.Count(),
                 };
 
             var totalRecords = await groupedQuery.CountAsync();
@@ -396,6 +389,7 @@ namespace vue_spotify_app.Server
 
             var tracks = await _dataContext.Tracks
                 .Where(t => aliasIDs.Contains(t.AliasID) && !string.IsNullOrWhiteSpace(t.Name))
+                .Include(t => t.Alias)
                 .Include(t => t.Artists)
                 .Include(t => t.TrackArtists)
                 .Include(t => t.Album)
@@ -410,7 +404,7 @@ namespace vue_spotify_app.Server
                 {
                     var viewModel = new TrackViewModel
                     {
-                        ID = track.ID,
+                        ID = track.Alias.PrimaryTrackID,
                         Name = track.Name,
                         ExternalURL = track.ExternalURL,
                         AlbumName = track.Album.Name,
