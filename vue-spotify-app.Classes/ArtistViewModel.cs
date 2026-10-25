@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace vue_spotify_app.Classes
 {
+    /// <summary>
+    /// A view model for representing an artist.
+    /// </summary>
     public class ArtistViewModel
     {
         /// <summary>

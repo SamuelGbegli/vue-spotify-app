@@ -56,10 +56,12 @@ namespace vue_spotify_app.Classes
         /// </summary>
         public bool NewAlbums { get; set; }
         /// <summary>
-        /// If true, only returns albums with the lowest 10% popularity
+        /// If true, only returns albums with the lowest 10% popularity rating.
         /// </summary>
         public bool HipsterAlbums { get; set; }
-
+        /// <summary>
+        /// Determines the number of results to skip.
+        /// </summary>
         public int Offset { get; set; }
     }
 }

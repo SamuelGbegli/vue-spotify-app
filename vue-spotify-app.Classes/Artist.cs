@@ -38,9 +38,13 @@ namespace vue_spotify_app.Classes
         /// A list of mappings between tracks and the artist.
         /// </summary>
         public List<TrackArtist> TrackArtists { get; set; }
-
+        /// <summary>
+        /// A list of tracks that the artist is credited for.
+        /// </summary>
         public List<Track> Tracks { get; set; }
-
+        /// <summary>
+        /// A list of albums that the artist is credited for.
+        /// </summary>
         public List<Album> Albums { get; set; }
 
         public Artist()
@@ -48,6 +52,10 @@ namespace vue_spotify_app.Classes
 
         }
 
+        /// <summary>
+        /// Creates a new Artist object from an API artist object.
+        /// </summary>
+        /// <param name="apiArtist">The API artist object to be converted.</param>
         public Artist(APIData.Artist apiArtist)
         {
             ID = apiArtist.id;

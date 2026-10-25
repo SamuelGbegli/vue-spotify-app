@@ -25,9 +25,15 @@ namespace vue_spotify_app.Classes
         /// The date and time when the track was played.
         /// </summary>
         public DateTime DatePlayed { get; set; }
-
+        /// <summary>
+        /// Stores the context in which the track was played, such as a playlist or album.
+        /// Is null if no context is available (e.g, when playing a track in Liked Songs).
+        /// </summary>
         public string? Context { get; set; }
-
+        /// <summary>
+        /// The URI of the context in which the track was played. Is null if no context is
+        /// available.
+        /// </summary>
         public string? ContextURI { get; set; }
     }
 }

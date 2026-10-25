@@ -69,6 +69,10 @@ namespace vue_spotify_app.Classes
             
         }
 
+        /// <summary>
+        /// Converts an API album object to a saveable Album object.
+        /// </summary>
+        /// <param name="album">An API album object.</param>
         public Album(APIData.Album album)
         {
             ID = album.id;
@@ -79,15 +83,14 @@ namespace vue_spotify_app.Classes
             SpotifyURI = album.uri;
             ExternalURL = album.external_urls.spotify;
             AlbumType = album.album_type;
+
+            // Adds album cover if one exists
             if (album.images != null && album.images.Count > 0)
             {
                 AlbumCover = new AlbumCover(album.images.First());
             }
-            Artists = new List<Artist>();
-            foreach (var apiArtist in album.artists)
-            {
-                Artists.Add(new Artist(apiArtist));
-            }
+            
+            Artists = album.artists.Select(a => new Artist(a)).ToList();
         }
     }
 }

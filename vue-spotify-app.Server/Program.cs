@@ -39,6 +39,7 @@ builder.Services.AddScoped<TrackAliasService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<SavedTrackService>();
 builder.Services.AddScoped<TrackListService>();
+builder.Services.AddScoped<AlbumService>();
 
 builder.Services.AddHostedService<SyncPlaybackRecordService>();
 builder.Services.AddHostedService<SyncLikedSongsLibraryService>();
