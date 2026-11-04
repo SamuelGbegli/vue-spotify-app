@@ -42,7 +42,11 @@ namespace vue_spotify_app.Server.Controllers
                     }
                     if(httpRequestException.StatusCode == System.Net.HttpStatusCode.BadRequest)
                     {
-                        return StatusCode(400, "Bad request.");
+                        return BadRequest("Bad request.");
+                    }
+                    if(httpRequestException.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        return NotFound();
                     }
                 }
                 return StatusCode(500, ex.Message);
