@@ -5,4 +5,8 @@ export default class AlbumViewModel {
     name: string = "";
     artists: ArtistViewModel[] = [];
     numberOfTracks: number = 0;
+    releaseDate: string = "";
+    imageURL: string | null = null;
+    externalURL: string = "";
+    albumType: string = "";
 }

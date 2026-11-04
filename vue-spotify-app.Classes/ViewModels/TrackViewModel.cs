@@ -67,5 +67,9 @@ namespace vue_spotify_app.Classes
         /// The number of recorded times a track was played.
         /// </summary>
         public int NumberOfFoundRecords { get; set; }
+        /// <summary>
+        /// The index of the track in an album or playlist.
+        /// </summary>
+        public int Index { get; set; }
     }
 }

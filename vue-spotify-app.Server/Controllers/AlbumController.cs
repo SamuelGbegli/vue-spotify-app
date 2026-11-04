@@ -33,6 +33,33 @@ namespace vue_spotify_app.Server.Controllers
             }
             catch (Exception ex)
             {
+                if(ex.GetType() == typeof(HttpRequestException))
+                {
+                    var httpRequestException = (HttpRequestException)ex;
+                    if(httpRequestException.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    {
+                        return StatusCode(429, "Too many requests. Please try again later.");
+                    }
+                    if(httpRequestException.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        return StatusCode(400, "Bad request.");
+                    }
+                }
+                return StatusCode(500, ex.Message);
+            }
+        }
+        [HttpGet("gettracks")]
+        public async Task<IActionResult> GetTracks([FromQuery] string albumID, [FromQuery] int offset = 0)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var tracks = await _albumService.GetAlbumTracks(user, albumID, offset);
+                return Ok(tracks);
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, ex.Message);
             }
         }
