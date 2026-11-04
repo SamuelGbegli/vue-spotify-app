@@ -40,19 +40,25 @@
           v-model:pagination="pagination"
           @virtual-scroll="onScroll"
           @request="onRequest">
+    <!--Section for top of table-->
     <template v-slot:top>
       <div class="col q-pa-sm q-gutter-sm">
       <div class="row q-gutter-md">
         <div class="q-table__title" v-if="trackBatches.length > 0">Total tracks: {{ pagination.rowsNumber }}</div>
         <QSpace />
+        <!--Button to open dialog to add tracks to list; ony visible if viewing internal track list-->
         <QBtn v-if="props.listId" label="Add tracks" color="primary" @click="openAddTrackDialog()"/>
+        <!--Button to open filtering and sort dialog-->
         <QBtn label="Filter and sort tracks" color="primary" @click="openFilterAndSortDialog()" />
       </div>
       <div class="row items-center">
         <div v-if="statusCode === 200 || statusCode == null" class="row q-gutter-xs">
         <QChip v-if="route.query.query" :label="`'${route.query.query}' ${generateFilterQueryChip()}`" color="primary" text-color="white" />
         <QChip v-if="route.query.from || route.query.to">
-          <template v-if="route.query.from && route.query.to">
+          <template v-if="route.query.from && route.query.to && route.query.from === route.query.to">
+            {{ `Saved on ${date.formatDate(new Date(route.query.from.toString()), "Do MMM YYYY")}` }}
+          </template>
+          <template v-else-if="route.query.from && route.query.to">
             {{ `Saved between ${date.formatDate(new Date(route.query.from.toString()), "Do MMM YYYY")} and ${date.formatDate(new Date(route.query.to.toString()), "Do MMM YYYY")}` }}
           </template>
           <template v-else-if="route.query.from">
@@ -146,7 +152,7 @@
                     <QItemLabel>Add to queue</QItemLabel>
                   </QItemSection>
                 </QItem>
-                <QItem v-if="listId" clickable v-close-popup @click="openDeleteDialog(props.row)">
+                <QItem v-if="listId" clickable v-close-popup @click="openDeleteDialog([props.row])">
                   <QItemSection>
                     <QItemLabel>Remove</QItemLabel>
                   </QItemSection>
@@ -159,6 +165,7 @@
     </template>
     <template v-slot:bottom>
       <QBtn label="Add random tracks to queue" @click="openQueueRandomTracksDialog"/>
+      <QBtn v-if="props.listId" :disable="selectedTracks.length === 0" label="Remove selected tracks" @click="openDeleteDialog(selectedTracks)"/>
       <QSpace/>
       <QPagination v-model="pagination.page"
                         :max="Math.ceil(pagination.rowsNumber/pagination.rowsPerPage)"
@@ -650,23 +657,24 @@ import AddTracksToListDialog from '@/dialogs/addTracksToListDialog.vue';
     });
   }
 
-  function openDeleteDialog(track: TrackViewModel){
+  function openDeleteDialog(tracks: TrackViewModel[]){
     Dialog.create({
       component: DeleteTracksDialog,
       componentProps: {
         listID: props.listId,
         listName: "",
-        tracks: [track]
+        tracks: tracks
       }
     }).onOk(async () => {
     
       console.log(trackBatches.value.flat().map(b => b.trackViewModels.map(t => t.id)));
+      selectedTracks.value = [];
 
         const newTotalTracks = pagination.value.rowsNumber - 1;
           if(Math.ceil(newTotalTracks / pagination.value.rowsPerPage) < pagination.value.page)
           pagination.value.page--;
         
-          if(trackBatches.value.map(b => b.trackViewModels).flat().map(t => t.id).includes(track.id))          
+          if(tracks.map(t => t.id).some(t => trackBatches.value.flat().map(b => b.trackViewModels.map(t => t.id)).flat().includes(t)))      
             await getTracks();
       }
     )

@@ -335,14 +335,14 @@ namespace vue_spotify_app.Server
                 .Skip((offset - 1) * numberOfRecords)
                 .Take(numberOfRecords).ToListAsync();
 
-            foreach (var trackRecord in trackRecords)
+            viewModels = trackRecords.Select(async tr =>
             {
-                var track = await _trackService.GetTrack(userId, trackRecord.ID);
-                track.NumberOfFoundRecords = trackRecord.Count;
+                var track = await _trackService.GetTrack(userId, tr.ID);
+                track.NumberOfFoundRecords = tr.Count; 
+                return track;
+            }).Select(t => t.Result).ToList();
 
-                viewModels.Add(track);
 
-            }
             return (totalRecords, viewModels);
         }
 
@@ -407,6 +407,7 @@ namespace vue_spotify_app.Server
                         ID = track.Alias.PrimaryTrackID,
                         Name = track.Name,
                         ExternalURL = track.ExternalURL,
+                        Length = track.Length,
                         AlbumName = track.Album.Name,
                         AlbumExternalURL = track.Album.ExternalURL,
                         AlbumCover = track.Album.AlbumCover.Link,
@@ -427,6 +428,10 @@ namespace vue_spotify_app.Server
                 }
                 return null;
             }).Where(vm => vm != null).ToList();
+
+            viewModels = viewModels.OrderByDescending(vm => vm.NumberOfFoundRecords)
+                .ThenByDescending(vm => vm.Length).ToList();
+
             return (totalRecords, viewModels);
         }
 

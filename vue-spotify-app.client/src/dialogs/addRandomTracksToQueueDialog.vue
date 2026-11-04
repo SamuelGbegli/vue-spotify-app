@@ -92,7 +92,7 @@
                      outlined
                      dense
                      class="q-mt-md" />
-            <QList v-if="props.listID">
+            <!--<QList v-if="props.listID">
                 <QItem tag="label">
                     <QItemSection>
                         <QItemLabel>Remove selected tracks from list</QItemLabel>                    
@@ -101,7 +101,7 @@
                         <QToggle v-model="removeSelectedTracks"/>
                     </QItemSection>
                 </QItem>
-            </QList>
+            </QList>-->
           </QCardSection>
         </QForm>
 

@@ -22,7 +22,7 @@ namespace vue_spotify_app.Classes
         /// </summary>
         public int Page { get; set; }
         /// <summary>
-        /// A list of items returned for the search query. The onject type will vary depending on the items returned.
+        /// A list of items returned for the search query. The object type will vary depending on the items returned.
         /// </summary>
         public List<object> Items { get; set; } = new List<object>();
     }

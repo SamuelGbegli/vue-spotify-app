@@ -32,6 +32,7 @@
         <QTd :props="props">
           <div class="row q-gutter-md items-center">
             <span>{{ props.row.ownerName }}</span>
+            <!--TODO: Add link to button-->
             <QBtn title="View owner on Spotify" icon="link" flat round size="sm" />
           </div>
         </QTd>

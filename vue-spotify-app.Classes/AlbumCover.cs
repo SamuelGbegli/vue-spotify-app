@@ -40,6 +40,10 @@ namespace vue_spotify_app.Classes
 
         }
 
+        /// <summary>
+        /// Creates a new AlbumCover object from an API image object.
+        /// </summary>
+        /// <param name="image">An API image object.</param>
         public AlbumCover(APIData.Image image)
         {
             Link = image.url;

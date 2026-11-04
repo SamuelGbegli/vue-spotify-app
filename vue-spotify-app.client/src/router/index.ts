@@ -14,6 +14,7 @@ import ViewPlaylistPage from '@/pages/ViewPlaylistPage.vue'
 import ViewTrackPage from '@/pages/ViewTrackPage.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import ViewTrackListPage from '@/pages/ViewTrackListPage.vue'
+import AlbumPage from '@/pages/AlbumPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -64,8 +65,11 @@ const router = createRouter({
       component: ViewPlaylistPage
     },
     {
-      path: "/reviewpendingrecords",
-      component: ReviewPendingPlaybackRecords
+      path: "/album/:id",
+      component: AlbumPage,
+      meta: {
+        title: "Album",
+      }
     },
     {
       path: "/searchfortrackinplaylist",

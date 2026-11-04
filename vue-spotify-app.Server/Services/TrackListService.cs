@@ -113,8 +113,9 @@ namespace vue_spotify_app.Server.Services
                         {
                             if (await _dataContext.Tracks.FirstOrDefaultAsync(t => t.ID == trackID, cancellationToken) == null)
                             {
-                                var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
-                                await _trackService.AddOrUpdateTrack(track);
+                                var trackResponse = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(user.ID, $"tracks/{trackID}");
+                                var trackItem = await _trackService.AddOrUpdateTrack(trackResponse);
+                                await _dataContext.AddAsync(trackItem);
                                 await Task.Delay(50); // Delay to avoid hitting rate limits
                             }
                         }
@@ -143,19 +144,25 @@ namespace vue_spotify_app.Server.Services
         {
             var trackList = await _dataContext.TrackLists
                 .Where(tl => tl.UserID == user.SpotifyUserID && tl.ID == listId)
-                .FirstAsync(cancellationToken);
+                .FirstOrDefaultAsync(cancellationToken);
             if (trackList != null)
             {
-                foreach (var trackID in trackIDs)
-                {
-                    var trackRecord = await _dataContext.TrackRecords
-                        .Where(tr => tr.TrackListID == listId && tr.SpotifyID == trackID)
-                        .FirstOrDefaultAsync(cancellationToken);
-                    if (trackRecord != null)
-                    {
-                        _dataContext.TrackRecords.Remove(trackRecord);
-                    }
-                }
+                var recordsToRemove = _dataContext.TrackRecords
+                    .Where(tr => tr.TrackListID == listId && trackIDs.Contains(tr.SpotifyID))
+                    .AsQueryable();
+
+                _dataContext.TrackRecords.RemoveRange(recordsToRemove);
+
+                //foreach (var trackID in trackIDs)
+                //{
+                //    var trackRecord = await _dataContext.TrackRecords
+                //        .Where(tr => tr.TrackListID == listId && tr.SpotifyID == trackID)
+                //        .FirstOrDefaultAsync(cancellationToken);
+                //    if (trackRecord != null)
+                //    {
+                //        _dataContext.TrackRecords.Remove(trackRecord);
+                //    }
+                //}
                 trackList.DateModified = DateTime.Now;
                 await _dataContext.SaveChangesAsync(cancellationToken);
             }

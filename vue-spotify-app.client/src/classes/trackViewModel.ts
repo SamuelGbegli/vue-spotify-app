@@ -17,6 +17,7 @@ export default class TrackViewModel {
   numberOfFoundRecords: number;
   isInLikedSongs: boolean = false;
   selected: boolean = false;
+  index: number = 0;
 
   constructor(data: any) {
     this.id = data.id;
