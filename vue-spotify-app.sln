@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vue-spotify-app.Classes", "
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "vue-spotify-app.Database", "vue-spotify-app.Database\vue-spotify-app.Database.sqlproj", "{FAEEA7A8-3478-4141-BDED-1898778C3661}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtendedPlaybackHistoryReader", "..\vue-spotify-app-tools\ExtendedPlaybackHistoryReader\ExtendedPlaybackHistoryReader.csproj", "{FE3F86F0-A9F0-4F7A-9AC3-831D8972929B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,10 +37,6 @@ Global
 		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FAEEA7A8-3478-4141-BDED-1898778C3661}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{FE3F86F0-A9F0-4F7A-9AC3-831D8972929B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FE3F86F0-A9F0-4F7A-9AC3-831D8972929B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FE3F86F0-A9F0-4F7A-9AC3-831D8972929B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FE3F86F0-A9F0-4F7A-9AC3-831D8972929B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
