@@ -441,7 +441,7 @@ import AddTracksToListDialog from '@/dialogs/addTracksToListDialog.vue';
         batch.batchIndex = x.batchIndex;
         // Pushes track view models to batch
         x.trackViewModels.forEach((y: any) => {
-          batch.trackViewModels.push(new TrackViewModel(y));
+          batch.trackViewModels.push(y as TrackViewModel);
         });
         updatedBatches.push(batch);
       });
@@ -455,7 +455,7 @@ import AddTracksToListDialog from '@/dialogs/addTracksToListDialog.vue';
        const batch = new TrackViewModelBatch();
       batch.batchIndex = response.data.tracks[0].batchIndex;
       response.data.tracks[0].trackViewModels.forEach((x: any) => {
-        batch.trackViewModels.push(new TrackViewModel(x));
+        batch.trackViewModels.push(x as TrackViewModel);
       });
 
       if (addToTop) {

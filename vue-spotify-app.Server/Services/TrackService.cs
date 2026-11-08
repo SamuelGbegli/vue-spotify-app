@@ -522,33 +522,69 @@ namespace vue_spotify_app.Server
             if (likedSongsList == null) throw new Exception("Liked Songs list does not exist for user");
             try
             {
-                var track = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(userID, $"tracks/{trackID}");
+                TrackViewModel viewModel;
+                var track = await _dataContext.Tracks
+                    .Include(t => t.TrackArtists)
+                    .ThenInclude(ta => ta.Artist)
+                    .Include(t => t.Album)
+                    .ThenInclude(a => a.AlbumCover)
+                    .FirstOrDefaultAsync(t => t.ID == trackID);
 
-                var viewModel = new TrackViewModel
+
+                if(track != null)
                 {
-                    Name = track.name,
-                    ExternalURL = track.external_urls.spotify,
-                    AlbumName = track.album.name,
-                    AlbumCover = track.album.images.FirstOrDefault(a => a.width == track.album.images.Max(i => i.width)).url,
-                    AlbumExternalURL = track.album.external_urls.spotify,
-                    Length = track.duration_ms,
-                    ID = trackID,
-                };
-                foreach (var artist in track.artists)
-                {
-                    viewModel.Artists.Add(new Classes.ArtistViewModel
+                    viewModel = new TrackViewModel
                     {
-                        ID = artist.id,
-                        Name = artist.name,
-                        ExternalURL = artist.external_urls.spotify,
-                        Index = track.artists.IndexOf(artist)
-                    });
+                        Name = track.Name,
+                        ExternalURL = track.ExternalURL,
+                        Artists = track.TrackArtists.Select(a => new ArtistViewModel
+                        {
+                            ID = a.ArtistID,
+                            Name = a.Artist.Name,
+                            ExternalURL = a.Artist.ExternalURL,
+                            Index = a.Index
+                        }).ToList(),
+                        AlbumName = track.Album.Name,
+                        AlbumCover = track.Album.AlbumCover.Link,
+                        AlbumExternalURL = track.Album.ExternalURL,
+                        Length = track.Length,
+                        ID = trackID
+                    };
+
+                    var aliasedTrackIDs = _dataContext.Tracks.Where(t => t.AliasID == track.AliasID).Select(t => t.ID);
+                    var likedSongsRecords = _dataContext.TrackRecords.Where(tr => aliasedTrackIDs.Contains(tr.SpotifyID) && tr.TrackListID == likedSongsList.ID);
+                    if (likedSongsRecords.Count() > 0)
+                    {
+                        var trackRecord = likedSongsRecords.FirstOrDefault(r => r.ID == trackID);
+                        if (trackRecord != null) viewModel.DateSaved = trackRecord.DateAdded;
+                        else viewModel.DateSaved = likedSongsRecords.Select(r => r.DateAdded).Min();
+                    }                    
+
                 }
-                var likedSongTrack = await _dataContext.TrackRecords.FirstOrDefaultAsync(x => x.SpotifyID == trackID && x.TrackListID == likedSongsList.ID);
-                if (likedSongTrack != null)
+                else
                 {
-                    viewModel.DateSaved = likedSongTrack.DateAdded;
+                    var apiResponse = await _spotifyAPIWrapper.GetAsync<Classes.APIData.Track>(userID, $"tracks/{trackID}");
+
+                    viewModel = new TrackViewModel
+                    {
+                        Name = apiResponse.name,
+                        ExternalURL = apiResponse.external_urls.spotify,
+                        Artists = apiResponse.artists.Select(a => new ArtistViewModel
+                        {
+                            ID = a.id,
+                            Name = a.name,
+                            ExternalURL = a.external_urls.spotify,
+                            Index = apiResponse.artists.IndexOf(a)
+                        }).ToList(),
+                        AlbumName = apiResponse.album.name,
+                        AlbumCover = apiResponse.album.images.FirstOrDefault(a => a.width == apiResponse.album.images.Max(i => i.width)).url,
+                        AlbumExternalURL = apiResponse.album.external_urls.spotify,
+                        Length = apiResponse.duration_ms,
+                        ID = trackID,
+                    };
                 }
+
+
                 return viewModel;
             }
             catch (Exception ex)

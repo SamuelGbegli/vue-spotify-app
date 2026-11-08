@@ -26,9 +26,5 @@ namespace vue_spotify_app.Classes
 
         public SpotifyToken? SpotifyToken { get; set; }
 
-        /// <summary>
-        /// A list of tracks that have been saved by the user.
-        /// </summary>
-        public List<SavedTrack> SavedTracks { get; set; } = new List<SavedTrack>();
     }
 }

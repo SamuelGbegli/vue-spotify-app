@@ -56,48 +56,7 @@ import TrackViewModel from '@/classes/trackViewModel';
 
   async function searchForTrack(){
     foundTracks.value = []
-    try{
-      const response = await axios.get(
-      `https://api.spotify.com/v1/playlists/${playlistID.value}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-      }
-    )
-    response.data.tracks.items.forEach(x => {
-      const trackData = x.track
-      if(trackData.name.toLowerCase().startsWith(trackQuery.value.toLowerCase())){
-        const artists = []
-        trackData.artists.forEach(y => {
-          const artist = {
-            id: y.id,
-            name: y.name,
-            uri: y.uri,
-            externalURL:y.external_urls.spotify
-          }
-          console.log(y.external_urls.spotify)
-          artists.push(artist)
-        })
-        console.log(artists)
-        const trackViewModel = new TrackViewModel({
-          id: trackData.id,
-          name: trackData.name,
-          uri: trackData.uri,
-          externalURL: trackData.external_urls.spotify,
-          artists,
-          albumName: trackData.album.name,
-          albumCover: trackData.album.images[0].url,
-          albumURI: trackData.album.uri,
-          albumExternalURL: trackData.album.external_urls.spotify,
-          length: trackData.duration_ms,
-          dateSaved: x.added_at
-        })
-        foundTracks.value.push(trackViewModel)
-      }
-    })
-    }
-    catch(ex){
-      console.log(ex)
-      alert("Something went wrong with the request.")
-    }
+
   }
 
   </script>

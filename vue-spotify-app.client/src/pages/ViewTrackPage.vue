@@ -195,7 +195,8 @@ async function getTrackInformation() {
         authToken: authStore.accessToken
       }
     });
-    track.value = new TrackViewModel(response.data);
+    track.value = response.data as TrackViewModel;
+    console.log(track);
     title.value = `${track.value.name} - ${track.value.artists.map((x) => x.name).join(", ")}`;
   }
   catch (ex) {
