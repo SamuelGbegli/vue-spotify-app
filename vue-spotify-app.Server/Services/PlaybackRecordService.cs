@@ -302,50 +302,6 @@ namespace vue_spotify_app.Server
              return records.Select(x => x.DatePlayed).ToList();
         }
 
-        public async Task<(int, List<TrackViewModel>)> GetTracksGroupedByPlaybackRecordsNew(Guid userId, int offset = 0, int numberOfRecords = 50, DateTime? startDate = null, DateTime? endDate = null)
-        {
-
-            var viewModels = new List<TrackViewModel>();
-
-            List<DateTime> dates = new List<DateTime>();
-
-            if (startDate != null && endDate != null)
-            {
-                dates = new List<DateTime>
-                {
-                    startDate.Value, endDate.Value
-                };
-            }
-            var query =
-            from r in _dataContext.PlaybackRecords
-            join t in _dataContext.Tracks.Include(t => t.Alias) on r.SpotifyID equals t.ID
-            where (startDate == null || (dates.IsNullOrEmpty() && r.DatePlayed >= startDate) || (!dates.IsNullOrEmpty() &&  r.DatePlayed >= dates.Min()))
-            && (endDate == null || (dates.IsNullOrEmpty() && r.DatePlayed < endDate.Value.AddDays(1)) || (!dates.IsNullOrEmpty() && r.DatePlayed <= dates.Max().AddDays(1)))
-            group r by t.Alias.PrimaryTrackID into g
-            select new
-            {
-                ID = g.Key,
-                Count = g.Count()
-            };
-
-            var totalRecords = await query.CountAsync();
-
-            var trackRecords = await query
-                .OrderByDescending(r => r.Count)
-                .Skip((offset - 1) * numberOfRecords)
-                .Take(numberOfRecords).ToListAsync();
-
-            viewModels = trackRecords.Select(async tr =>
-            {
-                var track = await _trackService.GetTrack(userId, tr.ID);
-                track.NumberOfFoundRecords = tr.Count; 
-                return track;
-            }).Select(t => t.Result).ToList();
-
-
-            return (totalRecords, viewModels);
-        }
-
         public async Task<(int, List<TrackViewModel>)> GetTracksGroupedByPlaybackRecordsV2(
             Guid userId, 
             int offset = 0, 
@@ -374,7 +330,7 @@ namespace vue_spotify_app.Server
                 select new
                 {
                     AliasID = g.Key,
-                    Count = g.Count(),
+                    Count = g.Count()
                 };
 
             var totalRecords = await groupedQuery.CountAsync();
@@ -415,13 +371,13 @@ namespace vue_spotify_app.Server
                     };
                     foreach (var trackArtist in track.TrackArtists.OrderBy(ta => ta.Index))
                     {
-                        var artist = _dataContext.Artists.Find(trackArtist.ArtistID);
+                        var artist = trackArtist.Artist;
                         viewModel.Artists.Add(new Classes.ArtistViewModel
                         {
                             ID = artist.ID,
                             Name = artist.Name,
                             ExternalURL = artist.ExternalURL,
-                            Index = artist.TrackArtists.FirstOrDefault(ta => ta.TrackID == track.ID)?.Index ?? 0
+                            Index = trackArtist.Index
                         });
                     }
                     return viewModel;

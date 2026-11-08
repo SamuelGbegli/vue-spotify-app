@@ -290,28 +290,32 @@ namespace vue_spotify_app.Server
             {
                 case SortType.Name:
                     query = filter.SortOrder == SortOrder.Ascending
-                    ? query.OrderBy(t => t.SortName)
-                    : query.OrderByDescending(t => t.SortName);
+                    ? query.OrderBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
+                    : query.OrderByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
                     break;
 
                 case SortType.Artist:
                     query = filter.SortOrder == SortOrder.Ascending
-                    ? query.OrderBy(t => t.ArtistSortName)
-                    : query.OrderByDescending(t => t.ArtistSortName);
+                    ? query.OrderBy(t => t.ArtistSortName).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
+                    : query.OrderByDescending(t => t.ArtistSortName).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
                     break;
 
                 case SortType.Album:
-                    query = filter.SortOrder == SortOrder.Ascending ? query.OrderBy(t => t.AlbumSortName)
-                    : query.OrderByDescending(t => t.AlbumSortName);
+                    query = filter.SortOrder == SortOrder.Ascending 
+                        ? query.OrderBy(t => t.AlbumSortName).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
+                        : query.OrderByDescending(t => t.AlbumSortName).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
                     break;
 
                 case SortType.TrackLength:
-                    query = filter.SortOrder == SortOrder.Ascending ? query.OrderBy(t => t.Length) : query.OrderByDescending(t => t.Length);
+                    query = filter.SortOrder == SortOrder.Ascending 
+                        ? query.OrderBy(t => t.Length).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
+                        : query.OrderByDescending(t => t.Length).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
                     break;
 
                 case SortType.DateAdded:
-                    query = filter.SortOrder == SortOrder.Ascending ?
-                    query.OrderBy(t => t.DateAdded) : query.OrderByDescending(t => t.DateAdded);
+                    query = filter.SortOrder == SortOrder.Ascending 
+                        ? query.OrderBy(t => t.DateAdded).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID) 
+                        : query.OrderByDescending(t => t.DateAdded).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
                     break;
 
 
@@ -321,41 +325,41 @@ namespace vue_spotify_app.Server
                     join lp in lastPlayed
                         on t.AliasID equals lp.AliasID into g
                     from lp in g.DefaultIfEmpty()
-                    orderby lp.LastPlayed
+                    orderby lp.LastPlayed, t.SortName, t.TrackID
                     select t
                     :
                     from t in query
                     join lp in lastPlayed
                         on t.AliasID equals lp.AliasID into g
                     from lp in g.DefaultIfEmpty()
-                    orderby lp.LastPlayed descending
+                    orderby lp.LastPlayed descending, t.SortName descending, t.TrackID descending
                     select t;
                     break;
             }
-            ;
-
+            
             var totalItems = await query.Select(t => t.TrackID).CountAsync();
 
             foreach (var offset in offsets)
             {
                 var batch = new TrackViewModelBatch
                 {
-                    BatchIndex = (int)Math.Ceiling((double)offset / (double)numberOfTracks) + 1
+                    BatchIndex = (int)Math.Ceiling((double)offset / numberOfTracks) + 1
                 };
 
+                var anchor = query.ElementAt(offset);
 
                 var items = await query
                     .AsNoTracking()
                     .AsSplitQuery()
-                    .Skip(offset)
+                    .Where(q => query.Index() >= offset)
                     .Take(numberOfTracks)
                     .ToListAsync();
                 var ids = items.Select(i => i.TrackID);
 
                 var tracks = _dataContext.Tracks
                     .Where(t => ids.Contains(t.ID))
-                    .Include(t => t.Artists)
                     .Include(t => t.TrackArtists)
+                        .ThenInclude(ta => ta.Artist)
                     .Include(t => t.Album)
                         .ThenInclude(t => t.AlbumCover)
                     .AsNoTracking()
@@ -379,15 +383,15 @@ namespace vue_spotify_app.Server
                                           AlbumExternalURL = t.Album.ExternalURL,
                                           Length = t.Length,
                                           DateSaved = i.DateAdded,
-                                          Artists = t.Artists.Select(a =>
+                                          Artists = t.TrackArtists.OrderBy(ta => ta.Index).Select(ta =>
                                           {
-                                              var artistIDs = t.TrackArtists.OrderBy(ta => ta.Index).Select(ta => ta.ArtistID).ToList();
+                                              var artist = ta.Artist;
                                               return new ArtistViewModel
                                               {
-                                                  ID = a.ID,
-                                                  Name = a.Name,
-                                                  ExternalURL = a.ExternalURL,
-                                                  Index = artistIDs.IndexOf(a.ID)
+                                                  ID = artist.ID,
+                                                  Name = artist.Name,
+                                                  ExternalURL = artist.ExternalURL,
+                                                  Index = ta.Index
                                               };
                                           }).ToList(),
                                           DateLastPlayed = lastPlayed.FirstOrDefault(lp => lp.AliasID == i.AliasID)?.LastPlayed,
