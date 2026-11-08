@@ -37,7 +37,7 @@ builder.Services.AddScoped<SpotifyAPIWrapper>();
 builder.Services.AddScoped<PlaybackQueueService>();
 builder.Services.AddScoped<TrackAliasService>();
 builder.Services.AddScoped<SearchService>();
-builder.Services.AddScoped<SavedTrackService>();
+builder.Services.AddScoped<ExtendedRecordService>();
 builder.Services.AddScoped<TrackListService>();
 builder.Services.AddScoped<AlbumService>();
 
@@ -47,6 +47,7 @@ builder.Services.AddHostedService<SyncTracksWithPlaybackHistoryService>();
 builder.Services.AddHostedService<SyncPlaylistService>();
 builder.Services.AddHostedService<SyncTrackAliasService>();
 builder.Services.AddHostedService<SyncTracksService>();
+builder.Services.AddHostedService<SeedExtendedRecordsService>();
 
 builder.Services.Configure<SpotifyOptions>(builder.Configuration.GetSection("Spotify"));
 builder.Services.AddHttpContextAccessor();

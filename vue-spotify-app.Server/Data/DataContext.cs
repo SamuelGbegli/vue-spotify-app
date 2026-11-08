@@ -54,7 +54,7 @@ namespace vue_spotify_app.Server.Data
 
         public DbSet<TrackAlias> TrackAliases { get; set; }
 
-        public DbSet<SavedTrack> SavedTracks { get; set; }
+        public DbSet<ExtendedRecord> ExtendedRecords { get; set; }
 
         public DbSet<TrackList> TrackLists { get; set; }
 
@@ -190,19 +190,23 @@ namespace vue_spotify_app.Server.Data
                 .WithOne(t => t.Alias)
                 .HasForeignKey(t => t.AliasID);
 
-            modelBuilder.Entity<SavedTrack>()
-                .ToTable("SavedTracks")
-                .HasOne(st => st.User)
-                .WithMany(u => u.SavedTracks)
-                .HasForeignKey(st => st.UserID)
-                .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<TrackList>()
                 .ToTable("TrackLists")
                 .HasMany(l => l.Tracks)
                 .WithOne(t => t.TrackList)
                 .HasForeignKey(t => t.TrackListID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ExtendedRecord>()
+                .HasIndex(record => new { record.Timestamp, record.ID })
+                .IsDescending(true, false)
+                .IncludeProperties(record => new
+                {
+                    record.TrackURI,
+                    record.AmountPlayed,
+                    record.ReasonStart,
+                    record.ReasonEnd
+                });
         }
 
     }
