@@ -198,7 +198,11 @@ namespace vue_spotify_app.Server
 
         public async Task<(int, List<TrackViewModelBatch>)> GetTracksNew(string spotifyUserID, TrackFilter filter, List<int> offsets, Guid listID, int numberOfTracks = 50)
         {
+            var elapsedTimes = new List<TimeSpan>();
+            var stopwatch = new Stopwatch();
             var userLikedSongsList = await _dataContext.TrackLists.FirstAsync(l => l.UserID == spotifyUserID && l.TrackListType == TrackListType.LikedSongs);
+
+            stopwatch.Start();
 
             var query =
                 from tr in _dataContext.TrackRecords
@@ -222,6 +226,10 @@ namespace vue_spotify_app.Server
                     tr.DateAdded
                 };
 
+            stopwatch.Stop();
+            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 1
+            stopwatch.Restart();
+
             var lastPlayed =
                 from p in _dataContext.PlaybackRecords
                 join t in _dataContext.Tracks
@@ -233,6 +241,10 @@ namespace vue_spotify_app.Server
                     LastPlayed = g.Max(x => x.DatePlayed)
                 };
 
+            stopwatch.Stop();
+            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 2
+            stopwatch.Restart();
+
             var likedTracks =
                 from tr in _dataContext.TrackRecords
                 join t in _dataContext.Tracks
@@ -240,6 +252,9 @@ namespace vue_spotify_app.Server
                 where tr.TrackListID == userLikedSongsList.ID
                 select t.AliasID;
 
+            stopwatch.Stop();
+            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 3
+            stopwatch.Restart();
 
             var batches = new List<TrackViewModelBatch>();
 
@@ -255,7 +270,7 @@ namespace vue_spotify_app.Server
                 // Filters query depending on selected fields
                 query = query.Where(t =>
                     ((filter.SearchName || searchAll) && t.Name.Contains(search)) ||
-                    ((filter.SearchArtist || searchAll) && t.Artists.Any(a => a.Contains(search))) ||
+                    //((filter.SearchArtist || searchAll) && t.Artists.Any(a => a.Contains(search))) ||
                     ((filter.SearchAlbum || searchAll) && t.AlbumName.Contains(search)));
             }
 
@@ -314,8 +329,8 @@ namespace vue_spotify_app.Server
 
                 case SortType.DateAdded:
                     query = filter.SortOrder == SortOrder.Ascending 
-                        ? query.OrderBy(t => t.DateAdded).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID) 
-                        : query.OrderByDescending(t => t.DateAdded).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
+                        ? query.OrderBy(t => t.DateAdded).ThenBy(t => t.SortName).ThenBy(t => t.TrackID) 
+                        : query.OrderByDescending(t => t.DateAdded).ThenByDescending(t => t.SortName).ThenByDescending(t => t.TrackID);
                     break;
 
 
@@ -336,8 +351,16 @@ namespace vue_spotify_app.Server
                     select t;
                     break;
             }
-            
+
+            stopwatch.Stop();
+            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 4
+            stopwatch.Restart();
+
             var totalItems = await query.Select(t => t.TrackID).CountAsync();
+
+            stopwatch.Stop();
+            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 5
+            stopwatch.Restart();
 
             foreach (var offset in offsets)
             {
@@ -346,15 +369,27 @@ namespace vue_spotify_app.Server
                     BatchIndex = (int)Math.Ceiling((double)offset / numberOfTracks) + 1
                 };
 
-                var anchor = query.ElementAt(offset);
+                stopwatch.Stop();
+                elapsedTimes.Add(stopwatch.Elapsed);// Checkpoint 6
+                stopwatch.Restart();
+
+                // var anchor = query.ElementAt(offset);
+
+                stopwatch.Stop();
+                elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 7
+                stopwatch.Restart();
 
                 var items = await query
                     .AsNoTracking()
                     .AsSplitQuery()
-                    .Where(q => query.Index() >= offset)
+                    .Skip(offset)
                     .Take(numberOfTracks)
                     .ToListAsync();
                 var ids = items.Select(i => i.TrackID);
+
+                stopwatch.Stop();
+                elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 8
+                stopwatch.Restart();
 
                 var tracks = _dataContext.Tracks
                     .Where(t => ids.Contains(t.ID))
@@ -366,6 +401,9 @@ namespace vue_spotify_app.Server
                     .AsSplitQuery()
                     .ToList();
 
+                stopwatch.Stop();
+                elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 9
+                stopwatch.Restart();
 
                 var trackViewModels = from i in items
                                       join t in tracks on i.TrackID equals t.ID
@@ -403,7 +441,11 @@ namespace vue_spotify_app.Server
                 foreach (var trackViewModel in batch.TrackViewModels)
                     trackViewModel.Artists = trackViewModel.Artists.OrderBy(ta => ta.Index).ToList();
                 batches.Add(batch);
+
             }
+
+            stopwatch.Stop();
+            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 10
 
             return (totalItems, batches);
         }
