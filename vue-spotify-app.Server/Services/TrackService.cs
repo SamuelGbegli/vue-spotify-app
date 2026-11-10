@@ -198,168 +198,113 @@ namespace vue_spotify_app.Server
 
         public async Task<(int, List<TrackViewModelBatch>)> GetTracksNew(string spotifyUserID, TrackFilter filter, List<int> offsets, Guid listID, int numberOfTracks = 50)
         {
-            var elapsedTimes = new List<TimeSpan>();
+
+            TimeSpan projectedTime, retievalTime, totalTime;
             var stopwatch = new Stopwatch();
             var userLikedSongsList = await _dataContext.TrackLists.FirstAsync(l => l.UserID == spotifyUserID && l.TrackListType == TrackListType.LikedSongs);
 
+            var trackRecords = _dataContext.TrackRecords.Where(tr => tr.TrackListID == listID && tr.UserId == spotifyUserID);
+
             stopwatch.Start();
 
-            var query =
-                from tr in _dataContext.TrackRecords
-                join t in _dataContext.Tracks.Include(t => t.Artists)
-                    on tr.SpotifyID equals t.ID
-                join a in _dataContext.Albums
-                    on t.AlbumID equals a.ID
-                where tr.UserId == spotifyUserID
-                    && tr.TrackListID == listID
-                select new
+            var query = filter.SortType switch
+            {
+                SortType.Name => filter.SortOrder == SortOrder.Ascending
+                    ? _dataContext.Tracks.AsNoTracking().OrderBy(t => t.SortName).Select(t => new
+                    {
+                        t.ID,
+                        t.AliasID
+                    }) : _dataContext.Tracks.AsNoTracking().OrderByDescending(t => t.SortName).Select(t => new
+                    {
+                        t.ID,
+                        t.AliasID
+                    }),
+                SortType.Artist => filter.SortOrder == SortOrder.Ascending
+                ? _dataContext.Tracks.AsNoTracking().OrderBy(t => t.ArtistSortName).Select(t => new
                 {
-                    TrackID = t.ID,
-                    t.Name,
-                    t.SortName,
-                    Artists = t.Artists.Select(a => a.Name),
-                    t.ArtistSortName,
-                    AlbumName = a.Name,
-                    t.AlbumSortName,
-                    t.Length,
+                    t.ID,
+                    t.AliasID
+                }) : _dataContext.Tracks.AsNoTracking().OrderByDescending(t => t.ArtistSortName).Select(t => new
+                {
+                    t.ID,
+                    t.AliasID
+                }),
+                SortType.Album => filter.SortOrder == SortOrder.Ascending
+                ? _dataContext.Tracks.AsNoTracking().OrderBy(t => t.AlbumSortName).Select(t => new
+                {
+                    t.ID,
+                    t.AliasID
+                }) : _dataContext.Tracks.AsNoTracking().OrderByDescending(t => t.AlbumSortName).Select(t => new
+                {
+                    t.ID,
+                    t.AliasID
+                }),
+                SortType.TrackLength => filter.SortOrder == SortOrder.Ascending
+                ? _dataContext.Tracks.AsNoTracking().OrderBy(t => t.Length).Select(t => new
+                {
+                    t.ID,
+                    t.AliasID
+                }) : _dataContext.Tracks.AsNoTracking().OrderByDescending(t => t.Length).Select(t => new
+                {
+                    t.ID,
+                    t.AliasID
+                }),
+                SortType.DateAdded => filter.SortOrder == SortOrder.Ascending
+                ? _dataContext.Tracks.AsNoTracking()
+                    .Join(trackRecords, t => t.ID, tr => tr.SpotifyID, (t, tr) => new { Track = t, Record = tr })
+                    .OrderBy(t => t.Record.DateAdded)
+                    .Select(t => new
+                    {
+                        t.Track.ID,
+                        t.Track.AliasID,
+                    }) : _dataContext.Tracks.AsNoTracking()
+                    .Join(trackRecords, t => t.ID, tr => tr.SpotifyID, (t, tr) => new { Track = t, Record = tr })
+                    .OrderByDescending(t => t.Record.DateAdded)
+                    .Select(t => new
+                    {
+                        t.Track.ID,
+                        t.Track.AliasID,
+                    }),
+                SortType.DateLastPlayed => filter.SortOrder == SortOrder.Ascending
+                ? _dataContext.Tracks.AsNoTracking()
+                .Join(_dataContext.PlaybackRecords, t => t.ID, pr => pr.SpotifyID, (t, pr) => new
+                {
+                    t.ID,
                     t.AliasID,
-                    tr.DateAdded
-                };
-
-            stopwatch.Stop();
-            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 1
-            stopwatch.Restart();
-
-            var lastPlayed =
-                from p in _dataContext.PlaybackRecords
-                join t in _dataContext.Tracks
-                    on p.SpotifyID equals t.ID
-                group p by t.AliasID into g
-                select new
+                    pr.DatePlayed
+                }).GroupBy(r => r.AliasID)
+                .OrderBy(r => r.Max(pr => pr.DatePlayed))
+                .Select(r => new
                 {
-                    AliasID = g.Key,
-                    LastPlayed = g.Max(x => x.DatePlayed)
-                };
+                    ID = r.Select(i => i.ID).First(i => trackRecords.Select(tr => tr.SpotifyID).Contains(i)),
+                    AliasID = r.Key
+                }) : _dataContext.Tracks.AsNoTracking()
+                .Join(_dataContext.PlaybackRecords, t => t.ID, pr => pr.SpotifyID, (t, pr) => new
+                {
+                    t.ID,
+                    t.AliasID,
+                    pr.DatePlayed
+                }).GroupBy(r => r.AliasID)
+                .OrderByDescending(r => r.Max(pr => pr.DatePlayed))
+                .Select(r => new
+                {
+                    ID = r.Select(i => i.ID).First(i => trackRecords.Select(tr => tr.SpotifyID).Contains(i)),
+                    AliasID = r.Key
+                }),
+                _ => _dataContext.Tracks.AsNoTracking().OrderBy(t => t.Name).Select(t => new
+                {
+                    t.ID,
+                    t.AliasID
+                })
+            };
 
-            stopwatch.Stop();
-            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 2
-            stopwatch.Restart();
-
-            var likedTracks =
-                from tr in _dataContext.TrackRecords
-                join t in _dataContext.Tracks
-                    on tr.SpotifyID equals t.ID
-                where tr.TrackListID == userLikedSongsList.ID
-                select t.AliasID;
-
-            stopwatch.Stop();
-            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 3
-            stopwatch.Restart();
-
+              
             var batches = new List<TrackViewModelBatch>();
 
-            // Applies search filter to query
-            if (!string.IsNullOrWhiteSpace(filter.Query))
-            {
-                // Removes whitespace from start and end of search query
-                var search = filter.Query.Trim();
-
-                // Value to ensure that search is applied to all fields if all options are true or false
-                var searchAll = filter.SearchName == filter.SearchArtist && filter.SearchArtist == filter.SearchAlbum;
-
-                // Filters query depending on selected fields
-                query = query.Where(t =>
-                    ((filter.SearchName || searchAll) && t.Name.Contains(search)) ||
-                    //((filter.SearchArtist || searchAll) && t.Artists.Any(a => a.Contains(search))) ||
-                    ((filter.SearchAlbum || searchAll) && t.AlbumName.Contains(search)));
-            }
-
-            if (filter.DateRangeFrom.HasValue && filter.DateRangeTo.HasValue)
-            {
-                // Ensures the earliest date is treated as the start of the range and the latest date is treated as the end of the range
-                var dates = new List<DateTime> { filter.DateRangeFrom.Value, filter.DateRangeTo.Value };
-
-                // Applies date range filter to query
-                query = query.Where(t =>
-                    t.DateAdded >= dates.Min() &&
-                        t.DateAdded < dates.Max().AddDays(1));
-            }
-            else
-            {
-                // Gets tracks saved from a certain date if only a start date is provided
-                if (filter.DateRangeFrom.HasValue)
-                {
-                    query = query.Where(t =>
-                            t.DateAdded >= filter.DateRangeFrom.Value);
-                }
-
-                // Gets tracks saved up to a certain date if only an end date is provided
-                if (filter.DateRangeTo.HasValue)
-                {
-                    query = query.Where(t =>
-                        t.DateAdded <= filter.DateRangeTo.Value.AddDays(1));
-                }
-            }
-
-            switch (filter.SortType)
-            {
-                case SortType.Name:
-                    query = filter.SortOrder == SortOrder.Ascending
-                    ? query.OrderBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
-                    : query.OrderByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
-                    break;
-
-                case SortType.Artist:
-                    query = filter.SortOrder == SortOrder.Ascending
-                    ? query.OrderBy(t => t.ArtistSortName).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
-                    : query.OrderByDescending(t => t.ArtistSortName).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
-                    break;
-
-                case SortType.Album:
-                    query = filter.SortOrder == SortOrder.Ascending 
-                        ? query.OrderBy(t => t.AlbumSortName).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
-                        : query.OrderByDescending(t => t.AlbumSortName).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
-                    break;
-
-                case SortType.TrackLength:
-                    query = filter.SortOrder == SortOrder.Ascending 
-                        ? query.OrderBy(t => t.Length).ThenBy(t => t.SortName).ThenBy(t => t.DateAdded).ThenBy(t => t.TrackID)
-                        : query.OrderByDescending(t => t.Length).ThenByDescending(t => t.SortName).ThenByDescending(t => t.DateAdded).ThenByDescending(t => t.TrackID);
-                    break;
-
-                case SortType.DateAdded:
-                    query = filter.SortOrder == SortOrder.Ascending 
-                        ? query.OrderBy(t => t.DateAdded).ThenBy(t => t.SortName).ThenBy(t => t.TrackID) 
-                        : query.OrderByDescending(t => t.DateAdded).ThenByDescending(t => t.SortName).ThenByDescending(t => t.TrackID);
-                    break;
-
-
-                case SortType.DateLastPlayed:
-                    query = filter.SortOrder == SortOrder.Ascending ?
-                    from t in query
-                    join lp in lastPlayed
-                        on t.AliasID equals lp.AliasID into g
-                    from lp in g.DefaultIfEmpty()
-                    orderby lp.LastPlayed, t.SortName, t.TrackID
-                    select t
-                    :
-                    from t in query
-                    join lp in lastPlayed
-                        on t.AliasID equals lp.AliasID into g
-                    from lp in g.DefaultIfEmpty()
-                    orderby lp.LastPlayed descending, t.SortName descending, t.TrackID descending
-                    select t;
-                    break;
-            }
+            var totalItems = await trackRecords.Where(tr => query.Select(q => q.ID).Contains(tr.SpotifyID)).CountAsync();
 
             stopwatch.Stop();
-            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 4
-            stopwatch.Restart();
-
-            var totalItems = await query.Select(t => t.TrackID).CountAsync();
-
-            stopwatch.Stop();
-            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 5
+            totalTime = stopwatch.Elapsed; // Checkpoint 1
             stopwatch.Restart();
 
             foreach (var offset in offsets)
@@ -369,83 +314,74 @@ namespace vue_spotify_app.Server
                     BatchIndex = (int)Math.Ceiling((double)offset / numberOfTracks) + 1
                 };
 
-                stopwatch.Stop();
-                elapsedTimes.Add(stopwatch.Elapsed);// Checkpoint 6
-                stopwatch.Restart();
-
-                // var anchor = query.ElementAt(offset);
-
-                stopwatch.Stop();
-                elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 7
-                stopwatch.Restart();
-
-                var items = await query
+                var pagedQuery = query
                     .AsNoTracking()
-                    .AsSplitQuery()
+                    .Where(r => trackRecords.Select(tr => tr.SpotifyID).Contains(r.ID))
                     .Skip(offset)
-                    .Take(numberOfTracks)
+                    .Take(numberOfTracks);
+
+                var sql = pagedQuery.ToQueryString();
+
+               var ids = await pagedQuery
                     .ToListAsync();
-                var ids = items.Select(i => i.TrackID);
+
+                var items = await trackRecords
+                                        .Where(tr => ids.Select(i => i.ID).Contains(tr.SpotifyID))
+                                        .Join(_dataContext.Tracks
+                                            .Include(t => t.Album)
+                                                .ThenInclude(a => a.AlbumCover)
+                                            .Include(t => t.TrackArtists)
+                                                .ThenInclude(ta => ta.Artist),
+                                         tr => tr.SpotifyID, t => t.ID, (tr, t) => new
+                                        {
+                                            t.ID,
+                                            t.Name,
+                                            t.Length,
+                                            t.ExternalURL,
+                                            tr.DateAdded,
+                                            t.Album,
+                                            t.TrackArtists
+                                        })
+                                        .Select(i => new
+                                        {
+                                            i.ID,
+                                            i.Name,
+                                            i.Length,
+                                            i.ExternalURL,
+                                            i.DateAdded,
+                                            i.Album,
+                                            i.TrackArtists
+                                        }).ToListAsync();
 
                 stopwatch.Stop();
-                elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 8
+                retievalTime = stopwatch.Elapsed; // Checkpoint 2
                 stopwatch.Restart();
 
-                var tracks = _dataContext.Tracks
-                    .Where(t => ids.Contains(t.ID))
-                    .Include(t => t.TrackArtists)
-                        .ThenInclude(ta => ta.Artist)
-                    .Include(t => t.Album)
-                        .ThenInclude(t => t.AlbumCover)
-                    .AsNoTracking()
-                    .AsSplitQuery()
-                    .ToList();
-
-                stopwatch.Stop();
-                elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 9
-                stopwatch.Restart();
-
-                var trackViewModels = from i in items
-                                      join t in tracks on i.TrackID equals t.ID
-                                      join liked in likedTracks on i.AliasID equals liked into likedGroup
-                                      from liked in likedGroup.DefaultIfEmpty()
-                                      select new TrackViewModel
-                                      {
-                                          ID = i.TrackID,
-                                          Name = i.Name,
-                                          URI = t.SpotifyURI,
-                                          ExternalURL = t.ExternalURL,
-                                          AlbumName = t.Album.Name,
-                                          AlbumCover = t.Album.AlbumCover?.Link ?? string.Empty,
-                                          AlbumURI = t.Album.SpotifyURI,
-                                          AlbumExternalURL = t.Album.ExternalURL,
-                                          Length = t.Length,
-                                          DateSaved = i.DateAdded,
-                                          Artists = t.TrackArtists.OrderBy(ta => ta.Index).Select(ta =>
-                                          {
-                                              var artist = ta.Artist;
-                                              return new ArtistViewModel
-                                              {
-                                                  ID = artist.ID,
-                                                  Name = artist.Name,
-                                                  ExternalURL = artist.ExternalURL,
-                                                  Index = ta.Index
-                                              };
-                                          }).ToList(),
-                                          DateLastPlayed = lastPlayed.FirstOrDefault(lp => lp.AliasID == i.AliasID)?.LastPlayed,
-                                          IsInLikedSongs = liked != null
-                                      };
+                var trackViewModels = items.Select(i => new TrackViewModel
+                {
+                    ID = i.ID,
+                    Name = i.Name,
+                    Length = i.Length,
+                    ExternalURL = i.ExternalURL,
+                    DateSaved = i.DateAdded,
+                    AlbumName = i.Album.Name,
+                    AlbumExternalURL = i.Album.ExternalURL,
+                    AlbumCover = i.Album.AlbumCover.Link,
+                    Artists = i.TrackArtists.Select(ta => new ArtistViewModel
+                    {
+                        Name = ta.Artist.Name,
+                        ExternalURL = ta.Artist.ExternalURL
+                    }).ToList()
+                }).ToList();
 
 
-                batch.TrackViewModels = trackViewModels.ToList();
-                foreach (var trackViewModel in batch.TrackViewModels)
-                    trackViewModel.Artists = trackViewModel.Artists.OrderBy(ta => ta.Index).ToList();
+                batch.TrackViewModels = trackViewModels;
                 batches.Add(batch);
 
             }
 
             stopwatch.Stop();
-            elapsedTimes.Add(stopwatch.Elapsed); // Checkpoint 10
+            projectedTime = stopwatch.Elapsed; // Checkpoint 3
 
             return (totalItems, batches);
         }

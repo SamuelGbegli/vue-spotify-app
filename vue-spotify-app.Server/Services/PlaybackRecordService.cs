@@ -346,8 +346,8 @@ namespace vue_spotify_app.Server
             var tracks = await _dataContext.Tracks
                 .Where(t => aliasIDs.Contains(t.AliasID) && !string.IsNullOrWhiteSpace(t.Name))
                 .Include(t => t.Alias)
-                .Include(t => t.Artists)
                 .Include(t => t.TrackArtists)
+                    .ThenInclude(ta => ta.Artist)
                 .Include(t => t.Album)
                     .ThenInclude(a => a.AlbumCover)
                 .ToListAsync();
