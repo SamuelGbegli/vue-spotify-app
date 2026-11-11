@@ -107,7 +107,7 @@ namespace vue_spotify_app.Server
                 {
                     apiCall += $"before={((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds()}";
                 }
-                // Otherwise, set call to get all dtracks from after the most recent record
+                // Otherwise, set call to get all tracks from after the most recent record
                 else
                 {
                     apiCall += $"after={((DateTimeOffset)mostRecentRecord.DatePlayed).ToUnixTimeMilliseconds()}";
@@ -124,14 +124,30 @@ namespace vue_spotify_app.Server
                         buffer.Add(new PlaybackRecord
                         {
                             DatePlayed = DateTime.Parse(item.played_at),
+                            UserID = user.ID,
                             SpotifyID = item.track.id,
                             Context = item.context?.type,
                             ContextURI = item.context?.uri
                         });
-                        if(await _dataContext.Tracks.FindAsync(item.track.id) == null)
+                        var track = await _dataContext.Tracks.FindAsync(item.track.id);
+                        if (track == null)
                         {
-                            var trackToAdd = await _trackService.AddOrUpdateTrack(item.track);
-                            await _dataContext.AddAsync(trackToAdd);
+                            track = await _trackService.AddOrUpdateTrack(item.track);
+                            await _dataContext.AddAsync(track);
+                        }
+                        else
+                        {
+                            var alias = await _dataContext.TrackAliases
+                                .Include(ta => ta.Statistics)
+                                .Include(ta => ta.Tracks)
+                                .FirstOrDefaultAsync(ta => ta.ID == track.AliasID);
+                            if(alias != null)
+                            {
+                                alias.Statistics.LastUpdated = DateTime.Parse(item.played_at);
+                                alias.Statistics.TotalRecordedPlays = await _dataContext.PlaybackRecords
+                                    .Where(pr => pr.UserID == user.ID && alias.Tracks.Select(t => t.ID).Contains(pr.SpotifyID)).CountAsync();
+                                alias.Statistics.LastUpdated = DateTime.Now;
+                            }
                         }
                         if (buffer.Count >= batchSize)
                         {
@@ -187,6 +203,7 @@ namespace vue_spotify_app.Server
             var totalRecords = await query.CountAsync();
 
             var records = await query
+                .Where(r => r.UserID == user.ID)
                 .OrderByDescending(r => r.DatePlayed)
                 .Skip((offset - 1) * numberOfRecords)
                 .Take(numberOfRecords)

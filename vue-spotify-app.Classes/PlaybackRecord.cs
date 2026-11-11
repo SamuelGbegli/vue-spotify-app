@@ -18,6 +18,10 @@ namespace vue_spotify_app.Classes
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string ID { get; set; }
         /// <summary>
+        /// The ID of the user that played the track.
+        /// </summary>
+        public Guid UserID { get; set; }
+        /// <summary>
         /// The ID of the track on Spotify.
         /// </summary>
         public string SpotifyID { get; set; }

@@ -32,5 +32,9 @@ namespace vue_spotify_app.Classes
         /// Nullable in case there are any "empty" aliases from combining two tracks together.
         /// </summary>
         public string? PrimaryTrackID { get; set; }
+        /// <summary>
+        /// Stores statistics relating to playback of the aliased track.
+        /// </summary>
+        public TrackAliasPlaybackStatistics Statistics { get; set; }
     }
 }

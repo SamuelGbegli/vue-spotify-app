@@ -26,7 +26,7 @@ namespace vue_spotify_app.Server.Services
             // The maximum number of tracks to be fetched from the database at one time
             const int trackBatchCount = 100;
             // Loops through track database in groups of 100
-            for(int i = 0; i < await _dataContext.Tracks.Include(t => t.Alias).CountAsync(); i += trackBatchCount)
+            for (int i = 0; i < await _dataContext.Tracks.Include(t => t.Alias).CountAsync(); i += trackBatchCount)
             {
                 // Gets selected tracks from the database
                 var tracks = await _dataContext.Tracks.Include(t => t.Alias).Skip(i).Take(trackBatchCount).ToListAsync();
@@ -72,7 +72,63 @@ namespace vue_spotify_app.Server.Services
                     }
                 }
             }
+
             // Ends by saving changes to the database
+            await _dataContext.SaveChangesAsync();
+        }
+    
+        public async Task UpdateAliasStatistics(User user, CancellationToken cancellationToken = default)
+        {
+            // The total number of new aliases created
+            int aliasCount = 0;
+            // The maximum number of tracks to be fetched from the database at one time
+            const int batchCount = 100;
+
+            for (int i = 0; i < await _dataContext.TrackAliases.CountAsync(); i += batchCount)
+            {
+                var aliases = await _dataContext.TrackAliases
+                    .Include(ta => ta.Tracks)
+                    .Include(ta => ta.Statistics)
+                    .Skip(i)
+                    .Take(batchCount)
+                    .ToListAsync(cancellationToken);
+
+                foreach(var alias in aliases)
+                {
+                    if(alias.Statistics == null)
+                    {
+                        alias.Statistics = new TrackAliasPlaybackStatistics
+                        {
+                            TrackAliasID = alias.ID,
+                            UserID = user.ID
+                        };
+                        //_dataContext.TrackAliasPlaybackStatistics.Add(alias.Statistics);
+                        
+                    }
+                    var trackPlays = _dataContext.PlaybackRecords
+                            .Where(pr => pr.UserID == user.ID && alias.Tracks.Select(t => t.ID).Contains(pr.SpotifyID))
+                            .Select(pr => pr.DatePlayed);
+
+                    int totalPlays = await trackPlays.CountAsync(cancellationToken);
+                    DateTime? latestPlay = totalPlays > 0 ? await trackPlays.MaxAsync(cancellationToken) : null;
+
+
+                    if (alias.Statistics.TotalRecordedPlays != totalPlays || alias.Statistics.LastRecordedPlayDate != latestPlay)
+                    {
+                        alias.Statistics.TotalRecordedPlays = totalPlays;
+                        alias.Statistics.LastRecordedPlayDate = latestPlay;
+                        alias.Statistics.LastUpdated = DateTime.Now;
+                    }
+
+                    if (aliasCount < 50) aliasCount++;
+                    else
+                    {
+                        await _dataContext.SaveChangesAsync();
+                        aliasCount = 0;
+                    }
+                }
+
+            }
             await _dataContext.SaveChangesAsync();
         }
     }

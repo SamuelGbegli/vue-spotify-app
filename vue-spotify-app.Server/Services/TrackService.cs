@@ -266,42 +266,40 @@ namespace vue_spotify_app.Server
                         t.Track.AliasID,
                     }),
                 SortType.DateLastPlayed => filter.SortOrder == SortOrder.Ascending
-                ? _dataContext.Tracks.AsNoTracking()
-                .Join(_dataContext.PlaybackRecords, t => t.ID, pr => pr.SpotifyID, (t, pr) => new
-                {
-                    t.ID,
-                    t.AliasID,
-                    pr.DatePlayed
-                }).GroupBy(r => r.AliasID)
-                .OrderBy(r => r.Max(pr => pr.DatePlayed))
-                .Select(r => new
-                {
-                    ID = r.Select(i => i.ID).First(i => trackRecords.Select(tr => tr.SpotifyID).Contains(i)),
-                    AliasID = r.Key
-                }) : _dataContext.Tracks.AsNoTracking()
-                .Join(_dataContext.PlaybackRecords, t => t.ID, pr => pr.SpotifyID, (t, pr) => new
-                {
-                    t.ID,
-                    t.AliasID,
-                    pr.DatePlayed
-                }).GroupBy(r => r.AliasID)
-                .OrderByDescending(r => r.Max(pr => pr.DatePlayed))
-                .Select(r => new
-                {
-                    ID = r.Select(i => i.ID).First(i => trackRecords.Select(tr => tr.SpotifyID).Contains(i)),
-                    AliasID = r.Key
-                }),
-                _ => _dataContext.Tracks.AsNoTracking().OrderBy(t => t.Name).Select(t => new
-                {
-                    t.ID,
-                    t.AliasID
-                })
+                ? _dataContext.TrackAliasPlaybackStatistics.AsNoTracking()
+                    .Join(_dataContext.Tracks, ps => ps.TrackAliasID, t => t.AliasID, (ps, t) => new
+                    {
+                        ps.LastRecordedPlayDate,
+                        t.ID,
+                        t.AliasID,
+                    })
+                 .OrderBy(t => t.LastRecordedPlayDate)
+                    .Select(t => new
+                    {
+                        t.ID,
+                        t.AliasID,
+                    }) : _dataContext.TrackAliasPlaybackStatistics.AsNoTracking()
+                    .Join(_dataContext.Tracks, ps => ps.TrackAliasID, t => t.AliasID, (ps, t) => new
+                    {
+                        ps.LastRecordedPlayDate,
+                        t.ID,
+                        t.AliasID,
+                    })
+                 .OrderByDescending(t => t.LastRecordedPlayDate)
+                    .Select(t => new
+                    {
+                        t.ID,
+                        t.AliasID,
+                    })
             };
 
-              
+
             var batches = new List<TrackViewModelBatch>();
 
-            var totalItems = await trackRecords.Where(tr => query.Select(q => q.ID).Contains(tr.SpotifyID)).CountAsync();
+
+            var totalQuery = trackRecords.Where(tr => query.Select(q => q.ID).Contains(tr.SpotifyID));
+            var totalSql = totalQuery.ToQueryString();
+            var totalItems = await totalQuery.CountAsync();
 
             stopwatch.Stop();
             totalTime = stopwatch.Elapsed; // Checkpoint 1
@@ -316,64 +314,85 @@ namespace vue_spotify_app.Server
 
                 var pagedQuery = query
                     .AsNoTracking()
-                    .Where(r => trackRecords.Select(tr => tr.SpotifyID).Contains(r.ID))
+                    .Join(trackRecords, q => q.ID, tr => tr.SpotifyID, (q, tr) => new
+                    {
+                        q.ID,
+                        q.AliasID,
+                        RecordID = tr.ID
+                    })
+                    //.Where(r => trackRecords.Select(tr => tr.SpotifyID).Contains(r.ID))
                     .Skip(offset)
                     .Take(numberOfTracks);
 
                 var sql = pagedQuery.ToQueryString();
 
-               var ids = await pagedQuery
-                    .ToListAsync();
+                var ids = await pagedQuery
+                     .ToListAsync();
 
                 var items = await trackRecords
-                                        .Where(tr => ids.Select(i => i.ID).Contains(tr.SpotifyID))
+                                        .Where(tr => ids.Select(i => i.RecordID).Contains(tr.ID))
                                         .Join(_dataContext.Tracks
                                             .Include(t => t.Album)
                                                 .ThenInclude(a => a.AlbumCover)
                                             .Include(t => t.TrackArtists)
-                                                .ThenInclude(ta => ta.Artist),
+                                                .ThenInclude(ta => ta.Artist)
+                                            .Include(t => t.Alias)
+                                            .ThenInclude(ta => ta.Statistics),
                                          tr => tr.SpotifyID, t => t.ID, (tr, t) => new
-                                        {
-                                            t.ID,
-                                            t.Name,
-                                            t.Length,
-                                            t.ExternalURL,
-                                            tr.DateAdded,
-                                            t.Album,
-                                            t.TrackArtists
-                                        })
+                                         {
+                                             RecordID = tr.ID,
+                                             t.ID,
+                                             t.Name,
+                                             t.Length,
+                                             t.ExternalURL,
+                                             tr.DateAdded,
+                                             t.Album,
+                                             t.TrackArtists,
+                                             t.Alias.Statistics
+                                         })
                                         .Select(i => new
                                         {
+                                            i.RecordID,
                                             i.ID,
                                             i.Name,
                                             i.Length,
                                             i.ExternalURL,
                                             i.DateAdded,
                                             i.Album,
-                                            i.TrackArtists
+                                            i.TrackArtists,
+                                            i.Statistics
                                         }).ToListAsync();
 
                 stopwatch.Stop();
                 retievalTime = stopwatch.Elapsed; // Checkpoint 2
                 stopwatch.Restart();
 
-                var trackViewModels = items.Select(i => new TrackViewModel
-                {
-                    ID = i.ID,
-                    Name = i.Name,
-                    Length = i.Length,
-                    ExternalURL = i.ExternalURL,
-                    DateSaved = i.DateAdded,
-                    AlbumName = i.Album.Name,
-                    AlbumExternalURL = i.Album.ExternalURL,
-                    AlbumCover = i.Album.AlbumCover.Link,
-                    Artists = i.TrackArtists.Select(ta => new ArtistViewModel
-                    {
-                        Name = ta.Artist.Name,
-                        ExternalURL = ta.Artist.ExternalURL
-                    }).ToList()
-                }).ToList();
+                var idDictionary = items.ToDictionary(i => i.RecordID);
 
+                var trackViewModels = ids
+                    .Where(i => idDictionary.ContainsKey(i.RecordID))
+                    .Select(i =>
+                    {
+                        var track = idDictionary[i.RecordID];
+
+                        return new TrackViewModel
+                        {
+                            ID = track.ID,
+                            Name = track.Name,
+                            Length = track.Length,
+                            ExternalURL = track.ExternalURL,
+                            DateSaved = track.DateAdded,
+                            AlbumName = track.Album.Name,
+                            AlbumExternalURL = track.Album.ExternalURL,
+                            AlbumCover = track.Album.AlbumCover.Link,
+                            Artists = track.TrackArtists.Select(ta => new ArtistViewModel
+                            {
+                                Name = ta.Artist.Name,
+                                ExternalURL = ta.Artist.ExternalURL
+                            }).ToList(),
+                            DateLastPlayed = track.Statistics.LastRecordedPlayDate ?? null
+                        };
+                    }).ToList();
 
                 batch.TrackViewModels = trackViewModels;
                 batches.Add(batch);
@@ -414,12 +433,12 @@ namespace vue_spotify_app.Server
             var idsToCheck = new StringBuilder();
 
             //Loops through every track record
-            for (int i = 0; i < userLikedSongs.Count(); i+= 40)
+            for (int i = 0; i < userLikedSongs.Count(); i += 40)
             {
                 var ids = userLikedSongs.Skip(i).Take(40).Select(t => t.SpotifyID);
 
                 //Makes API call to check items in Liked Songs library
-                var likedSongsRequest = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/library/contains?uris={string.Join(",",ids.Select(t => $"spotify:track:{t}"))}");
+                var likedSongsRequest = await _spotifyAPIWrapper.GetAsync<bool[]>(user.ID, $"me/library/contains?uris={string.Join(",", ids.Select(t => $"spotify:track:{t}"))}");
                 if (likedSongsRequest.Length > 0)
                 {
                     for (int j = 0; j < ids.Count(); j++)
@@ -454,7 +473,7 @@ namespace vue_spotify_app.Server
                         //    return;
                         //}
                         var track = await AddOrUpdateTrack(item.track);
-                        
+
                         if (await _dataContext.Tracks.FindAsync(track.ID) == null)
                         {
                             await _dataContext.Tracks.AddAsync(track);
@@ -684,6 +703,23 @@ namespace vue_spotify_app.Server
                     ISRC = track.external_ids?.isrc,
                     Playable = track.is_playable
                 };
+
+                var duplicateTrack = await _dataContext.Tracks.Include(t => t.Alias).FirstOrDefaultAsync(t =>
+                    t.ISRC == trackEntity.ISRC
+                );
+
+                if (duplicateTrack != null)
+                {
+                    trackEntity.Alias = duplicateTrack.Alias;
+                }
+                else
+                {
+                    trackEntity.Alias = new TrackAlias
+                    {
+                        Name = trackEntity.Name,
+                        PrimaryTrackID = trackEntity.ID
+                    };
+                }
             }
             else
             {
