@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using vue_spotify_app.Classes;
@@ -9,6 +10,7 @@ using vue_spotify_app.Server.Data;
 namespace vue_spotify_app.Server.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class PlaybackRecordController : ControllerBase
     {
@@ -23,93 +25,6 @@ namespace vue_spotify_app.Server.Controllers
         }
 
         [HttpGet]
-        [Route("getpendingrecords")]
-        public async Task<IActionResult> GetPendingRecords([FromQuery] int page)
-        {
-            try
-            {
-                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
-                var spotifyToken = await _dataContext.SpotifyTokens.FirstAsync(t => t.ID.ToString() == userId);
-
-                var totalRecords = await _dataContext.PendingPlaybackRecords.CountAsync();
-                var records = await _dataContext.PendingPlaybackRecords
-                    .OrderBy(r => r.DateRecorded)
-                    .Skip((page - 1) * 50).Take(50).ToListAsync();
-
-                var recordViewModels = new List<PendingPlaybackRecordViewModel>();
-
-                // Sets up HTTP Client
-                HttpClient client = new HttpClient();
-                // Adds JSON header to client
-                client.DefaultRequestHeaders.Accept.Add(
-                    new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-                // Adds Spotify auth token to header
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", spotifyToken.AccessToken);
-
-                foreach (var record in records)
-                {
-
-                    HttpResponseMessage responseMessage = await client.GetAsync($"https://api.spotify.com/v1/tracks/{record.InputtedSpotifyID}");
-                    if (responseMessage.IsSuccessStatusCode)
-                    {
-                        using var contentStream = responseMessage.Content.ReadAsStream();
-                        // Deserialize JSON response to object
-                        var trackInfo = System.Text.Json.JsonSerializer.Deserialize<Classes.APIData.Track>(contentStream);
-                        var recordViewModel = new PendingPlaybackRecordViewModel
-                        {
-                            ID = record.ID,
-                            DateAdded = record.DateRecorded,
-                            RecordedTrackName = record.InputtedName,
-                            RecordedSpotifyID = record.InputtedSpotifyID,
-                            FoundAlbum = trackInfo.album.name,
-                            FoundAlbumCover = trackInfo.album.images.FirstOrDefault().url,
-                            FoundTrackName = trackInfo.name,
-                        };
-                        // Adds artist names to view model
-                        foreach (var artist in trackInfo.artists)
-                        {
-                            recordViewModel.FoundArtists.Add(new Classes.Artist
-                            {
-                                Name = artist.name,
-                            });
-                        }
-                        recordViewModels.Add(recordViewModel);
-
-                    }
-                    Thread.Sleep(20);
-                }
-                return Ok(new
-                {
-                    totalRecords,
-                    records = recordViewModels
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet]
-        [Route("updaterecords")]
-        public async Task<IActionResult> UpdateRecords()
-        {
-            try
-            {
-
-                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
-                var authToken = await _dataContext.SpotifyTokens.FirstAsync(t => t.ID.ToString() == userId);
-                await _playbackRecordService.UpdatePlaybackHistory(authToken.AccessToken);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet]
         [Route("getrecords")]
         public async Task<IActionResult> GetRecords(
             //[FromHeader] string authToken,
@@ -120,14 +35,15 @@ namespace vue_spotify_app.Server.Controllers
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            try {
+            try
+            {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
                 var data = await _playbackRecordService.GetPlaybackRecords(user, offset, numberOfRecords, startDate, endDate);
                 stopwatch.Stop();
                 return Ok(new
                 {
-                    elapsedTime = stopwatch.ElapsedMilliseconds,
+                    elapsedTime = stopwatch.Elapsed,
                     records = data.Item2,
                     totalRecords = data.Item1
                 });
@@ -182,18 +98,47 @@ namespace vue_spotify_app.Server.Controllers
 
         [HttpGet]
         [Route("gettrackfoundrecords")]
-        public async Task<IActionResult> GetTracksByPlaybackRecordCount([FromQuery] int offset = 0, [FromQuery] int numberOfTracks = 50, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        public async Task<IActionResult> GetGroupedPlaybackRecords([FromQuery] int offset = 0, [FromQuery] int numberOfTracks = 50, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
+                var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
+                var records = await _playbackRecordService.GetTracksGroupedByPlaybackRecords(user.ID, offset, numberOfTracks, startDate, endDate);
+                stopwatch.Stop();
+                return Ok(new
+                {
+                    elapsedTime = stopwatch.Elapsed,
+                    totalRecords = records.Item1,
+                    records = records.Item2
+                });
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("exporttop100")]
+        public async Task<IActionResult> ExportListeningReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value;
                 var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.ID.ToString() == userId);
-                var records = await _playbackRecordService.GetTracksGroupedByPlaybackRecordsV2(user.ID, offset, numberOfTracks, startDate, endDate);
-                return Ok(new
-                {
-                    totalRecords = records.Item1,
-                    records = records.Item2
-                });
+
+                var data = await _playbackRecordService.GeneratePlaybackReport(user, startDate, endDate);
+                var fileName = $"Spotify data analysis ${DateTime.UtcNow:yyyy:MMM:dd}";
+
+                return File(
+                    data,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    fileName
+                    );
+
             }
             catch (Exception ex)
             {

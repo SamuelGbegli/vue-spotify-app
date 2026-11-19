@@ -63,17 +63,17 @@
           <!--Button to open menu-->
           <QBtn flat dense icon="more_vert">
             <QMenu anchor="bottom left" self="top left">
-                    <QList>
-                      <!--Item to view the track in a new page-->
-                      <QItem clickable v-close-popup :to="`viewtrack/${props.row.track.id}`">
-                        <QItemSection>View track</QItemSection>
-                      </QItem>
-                      <!--Item to open dialog to add track to queue-->
-                      <QItem clickable v-close-popup @click="openQueueDialog(props.row.track)">
-                        <QItemSection>Add track to queue</QItemSection>
-                      </QItem>
-                    </QList>
-                  </QMenu>
+                <QList>
+                  <!--Item to view the track in a new page-->
+                  <QItem clickable v-close-popup :to="`viewtrack/${props.row.track.id}`">
+                    <QItemSection>View track</QItemSection>
+                  </QItem>
+                  <!--Item to open dialog to add track to queue-->
+                  <QItem clickable v-close-popup @click="openQueueDialog(props.row.track)">
+                    <QItemSection>Add track to queue</QItemSection>
+                  </QItem>
+                </QList>
+              </QMenu>
           </QBtn>
             </q-td>
           </template>
@@ -200,7 +200,7 @@ const statusCode = ref<number | null>(null);
     }
   ];
 
-    // Stores pagination values for the table.
+  // Stores pagination values for the table.
   const pagination = ref({
     page: 1,
     rowsPerPage: 50,

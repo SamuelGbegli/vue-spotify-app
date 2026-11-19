@@ -279,6 +279,9 @@ namespace vue_spotify_app.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("ID");
 
                     b.ToTable("PlaybackRecords", (string)null);
@@ -398,6 +401,35 @@ namespace vue_spotify_app.Server.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("TrackAliases", (string)null);
+                });
+
+            modelBuilder.Entity("vue_spotify_app.Classes.TrackAliasPlaybackStatistics", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastRecordedPlayDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("TotalRecordedPlays")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TrackAliasID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("TrackAliasID")
+                        .IsUnique();
+
+                    b.ToTable("TrackAliasPlaybackStatistics", (string)null);
                 });
 
             modelBuilder.Entity("vue_spotify_app.Classes.TrackArtist", b =>
@@ -587,6 +619,15 @@ namespace vue_spotify_app.Server.Migrations
                     b.Navigation("Alias");
                 });
 
+            modelBuilder.Entity("vue_spotify_app.Classes.TrackAliasPlaybackStatistics", b =>
+                {
+                    b.HasOne("vue_spotify_app.Classes.TrackAlias", null)
+                        .WithOne("Statistics")
+                        .HasForeignKey("vue_spotify_app.Classes.TrackAliasPlaybackStatistics", "TrackAliasID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("vue_spotify_app.Classes.TrackArtist", b =>
                 {
                     b.HasOne("vue_spotify_app.Classes.Artist", "Artist")
@@ -635,6 +676,9 @@ namespace vue_spotify_app.Server.Migrations
 
             modelBuilder.Entity("vue_spotify_app.Classes.TrackAlias", b =>
                 {
+                    b.Navigation("Statistics")
+                        .IsRequired();
+
                     b.Navigation("Tracks");
                 });
 

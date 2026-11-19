@@ -146,13 +146,6 @@ namespace vue_spotify_app.Server.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("testplaybackhistory")]
-        public async Task<IActionResult> TestPlaybackHistory([FromHeader] string authToken)
-        {
-            await _playbackRecordService.UpdatePlaybackHistory(authToken);
-            return Ok();
-        }
 
         [HttpGet]
         [Route("initialisetracks")]

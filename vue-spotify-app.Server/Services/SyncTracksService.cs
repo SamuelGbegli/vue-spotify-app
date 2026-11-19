@@ -53,6 +53,7 @@ namespace vue_spotify_app.Server.Services
                             Debug.WriteLine($"ERROR: {ex.Message}");
                             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
                         }
+                        await Task.Delay(TimeSpan.FromSeconds(30));
                     }
                 }
             }

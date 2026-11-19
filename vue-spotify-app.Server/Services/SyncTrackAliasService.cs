@@ -24,14 +24,8 @@ namespace vue_spotify_app.Server.Services
                     {
                         var dataContext = scope.ServiceProvider.GetService<DataContext>();
 
-                        var flag = false;
-                        if (!flag)
-                        {
-                            await SeedTrackAliases.Run(dataContext);
-                            flag = true;
-                        }
-
-                        for (int i = 0; i < await dataContext.Tracks.CountAsync(); i += 100)
+                        
+                        for (int i = 0; i < await dataContext.Tracks.CountAsync(stoppingToken); i += 100)
                         {
                             var tracks =  dataContext.Tracks.Include(t => t.Artists).Skip(i).Take(100).ToList();
                             foreach (var track in tracks)
@@ -40,7 +34,20 @@ namespace vue_spotify_app.Server.Services
                         await dataContext.SaveChangesAsync();
 
                         var trackAliasService = scope.ServiceProvider.GetRequiredService<TrackAliasService>();
+                        var users = dataContext.Users.ToList();
+                        foreach(var user in users)
+                        {
+                            await trackAliasService.UpdateAliasStatistics(user);
+                        }
                         await trackAliasService.GenerateAliases();
+
+                        var emptyAliases = await dataContext.TrackAliases
+                            .Include(ta => ta.Tracks)
+                            .Where(ta => ta.Tracks.Count == 0)
+                            .ToListAsync();
+
+                        dataContext.TrackAliases.RemoveRange(emptyAliases);
+                        await dataContext.SaveChangesAsync();
                     }
                     await Task.Delay(TimeSpan.FromHours(2), stoppingToken);
                 }

@@ -60,6 +60,8 @@ namespace vue_spotify_app.Server.Data
 
         public DbSet<TrackArtist> TrackArtists { get; set; }
 
+        public DbSet<TrackAliasPlaybackStatistics> TrackAliasPlaybackStatistics { get; set; }
+
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
@@ -197,6 +199,9 @@ namespace vue_spotify_app.Server.Data
                 .HasForeignKey(t => t.TrackListID)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<TrackAliasPlaybackStatistics>()
+                .ToTable("TrackAliasPlaybackStatistics");
+                
             modelBuilder.Entity<ExtendedRecord>()
                 .HasIndex(record => new { record.Timestamp, record.ID })
                 .IsDescending(true, false)

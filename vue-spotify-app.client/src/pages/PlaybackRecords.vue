@@ -29,8 +29,8 @@
       <QSpace />
       <!--Button to open filter dialog to set start and end date ranges-->
       <QBtn label="Set dates" @click="openFilterDialog()" :disable="statusCode == null || groupStatusCode == null" />
+      <QBtn label="Export top 100 data" :disable="statusCode == null || groupStatusCode == null" @click="openExportDialog()"/>
     </div>
-    <!--<QBtn label="Update records" @click="updateRecords()" />-->
     <!--Tabs to switch between individual and grouped records-->
     <QTabs v-model="selectedTab">
       <QTab name="individual" label="Individual" />
@@ -200,6 +200,7 @@
   import PlaybackRecordViewModel from '@/classes/playbackRecordViewModel';
   import TrackViewModel from '@/classes/trackViewModel';
   import AddTrackToQueueDialog from '@/dialogs/addTrackToQueueDialog.vue';
+import ExportFilterDateRangeDialog from '@/dialogs/exportFilterDateRangeDialog.vue';
   import PlaybackRecordFilterDialog from '@/dialogs/playbackRecordFilterDialog.vue';
   import { useAuthStore } from '@/stores/authStore';
   import axios, { AxiosError } from 'axios';
@@ -508,6 +509,8 @@ import { useRoute, useRouter } from 'vue-router';
       // Sets the status code to the response status to hide the loading spinner
       groupStatusCode.value = response.status;
 
+      console.log(response.data);
+
     } catch (ex) {
       // Section if something goes wrong
       const error = ex as AxiosError;
@@ -543,6 +546,17 @@ import { useRoute, useRouter } from 'vue-router';
       // Gets records from the API with the new date ranges
       await getRecords();
       await getGroupedRecords();
+    });
+  }
+
+  function openExportDialog() {
+    // Creates dialog with the current filtered start and end date values passed down as properties
+    Dialog.create({
+      component: ExportFilterDateRangeDialog,
+      componentProps: {
+        startDateProp: startDate.value,
+        endDateProp: endDate.value
+      }
     });
   }
 
