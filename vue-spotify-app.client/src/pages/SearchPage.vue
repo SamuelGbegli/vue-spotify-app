@@ -237,7 +237,7 @@ const selectedItemTypes = ref<{label: string, value: string}[]>([]);
       });
       tracks.value = [];
       response.data.tracks.forEach(element => {
-        const viewModel = new TrackViewModel(element);
+        const viewModel = element as TrackViewModel;
        tracks.value.push(viewModel);
       });
       pagination.value.rowsNumber = response.data.total;

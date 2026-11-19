@@ -85,9 +85,9 @@
                 Add tracks to queue
               </QItemSection>
             </QItem>
-            <QItem clickable to="/reviewpendingrecords">
+            <QItem clickable to="/extendedrecords">
               <QItemSection>
-                Review pending track records
+                Extended records
               </QItemSection>
             </QItem>
             <QItem clickable to="/search">

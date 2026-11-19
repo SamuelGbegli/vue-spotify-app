@@ -212,7 +212,7 @@
       trackViewModels.value = []
       numberOftracks.value = response.data.totalTracks
       response.data.tracks.forEach((i) => {
-        const trackViewModel: TrackViewModel = new TrackViewModel(i)
+        const trackViewModel: TrackViewModel = i as TrackViewModel;
         trackViewModels.value.push((trackViewModel))
       })
       statusCode.value = response.status;

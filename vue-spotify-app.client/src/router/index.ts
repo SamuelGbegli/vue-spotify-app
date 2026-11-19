@@ -6,7 +6,7 @@ import MainPage from '@/pages/MainPage.vue'
 import NotFound from '@/pages/NotFound.vue'
 import PlaybackRecords from '@/pages/PlaybackRecords.vue'
 import PlaylistPage from '@/pages/PlaylistPage.vue'
-import ReviewPendingPlaybackRecords from '@/pages/ReviewPendingPlaybackRecords.vue'
+import ExtendedRecordPage from '@/pages/ExtendedRecordPage.vue'
 import SearchPage from '@/pages/SearchPage.vue'
 import TrackListPage from '@/pages/TrackListPage.vue'
 import SearchTracks from '@/pages/SearchTracks.vue'
@@ -93,6 +93,13 @@ const router = createRouter({
     {
       path: "/tracklists/:id",
       component: ViewTrackListPage
+    },
+    {
+      path: "/extendedrecords",
+      component: ExtendedRecordPage,
+      meta: {
+        title: "Extended Records",
+      }
     },
     {
       path: '/:pathMatch(.*)*',

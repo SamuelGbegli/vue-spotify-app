@@ -194,6 +194,50 @@ namespace vue_spotify_app.Server.Migrations
                     b.ToTable("Artists", (string)null);
                 });
 
+            modelBuilder.Entity("vue_spotify_app.Classes.ExtendedRecord", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AmountPlayed")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("OfflineTimestamp")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReasonEnd")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReasonStart")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Shuffle")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TrackURI")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("Timestamp", "ID")
+                        .IsDescending(true, false);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Timestamp", "ID"), new[] { "TrackURI", "AmountPlayed", "ReasonStart", "ReasonEnd" });
+
+                    b.ToTable("ExtendedRecords");
+                });
+
             modelBuilder.Entity("vue_spotify_app.Classes.PendingPlaybackRecord", b =>
                 {
                     b.Property<string>("ID")
@@ -278,29 +322,6 @@ namespace vue_spotify_app.Server.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("Playlists");
-                });
-
-            modelBuilder.Entity("vue_spotify_app.Classes.SavedTrack", b =>
-                {
-                    b.Property<string>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("DateAdded")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("SpotifyID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("SavedTracks", (string)null);
                 });
 
             modelBuilder.Entity("vue_spotify_app.Classes.Track", b =>
@@ -581,17 +602,6 @@ namespace vue_spotify_app.Server.Migrations
                     b.Navigation("Album");
                 });
 
-            modelBuilder.Entity("vue_spotify_app.Classes.SavedTrack", b =>
-                {
-                    b.HasOne("vue_spotify_app.Classes.User", "User")
-                        .WithMany("SavedTracks")
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("vue_spotify_app.Classes.Track", b =>
                 {
                     b.HasOne("vue_spotify_app.Classes.Album", "Album")
@@ -679,8 +689,6 @@ namespace vue_spotify_app.Server.Migrations
 
             modelBuilder.Entity("vue_spotify_app.Classes.User", b =>
                 {
-                    b.Navigation("SavedTracks");
-
                     b.Navigation("SpotifyToken");
                 });
 #pragma warning restore 612, 618
