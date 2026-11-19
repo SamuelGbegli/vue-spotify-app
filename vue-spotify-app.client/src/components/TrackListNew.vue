@@ -570,7 +570,7 @@ import AddTracksToListDialog from '@/dialogs/addTracksToListDialog.vue';
     else if (!!props.listId) router.push(`/tracklists/${props.listId}?${query.toString()}`);
     else router.push(`/?${query.toString()}`);
     
-    await getTracks(false, false, trackBatches.value.map(x => x.batchIndex));
+    //await getTracks(false, false, trackBatches.value.map(x => x.batchIndex));
   }
 
   function openQueueDialog(track: TrackViewModel) {
